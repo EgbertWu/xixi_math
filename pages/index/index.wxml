@@ -1,0 +1,99 @@
+<!--pages/index/index.wxml-->
+<!-- 希希数学小伙伴 首页模板 -->
+
+<view class="container">
+  <!-- 头部区域 -->
+  <view class="header">
+    <view class="logo-section">
+      <image class="logo" src="/images/mascot.png" mode="aspectFit"></image>
+      <view class="title-section">
+        <text class="app-title">希希数学小伙伴</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 主要功能卡片 -->
+  <view class="main-feature-card" bindtap="goToCamera">
+    <view class="camera-icon">
+      <text class="icon-camera"></text>
+    </view>
+    <view class="feature-content">
+      <view class="feature-title">拍照解题</view>
+      <view class="feature-desc">遇到难题？拍张照，陪你一起思考得到答案！</view>
+    </view>
+  </view>
+
+  <!-- 进度提示区域 -->
+  <view class="progress-section">
+    <text class="progress-text">太棒了！你今天已经进步了 5%！</text>
+    <view class="progress-bar">
+      <view class="progress-fill"></view>
+    </view>
+  </view>
+
+  <!-- 成长记录区域 -->
+  <view class="stats-section">
+    <view class="section-title">
+      <text class="iconfont icon-chart"></text>
+      <text class="title">成长记录</text>
+    </view>
+    
+    <view class="stats-grid">
+      <view class="stat-item">
+        <text class="stat-label">已解题数</text>
+        <text class="stat-number">{{stats.totalQuestions || 123}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">学习时间</text>
+        <text class="stat-number">{{stats.learningTime || '4h 30m'}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">准确率</text>
+        <text class="stat-number accuracy">{{stats.accuracy || '95%'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 解题记录区域 -->
+  <view class="history-section">
+    <view class="section-title">
+      <text class="iconfont icon-history"></text>
+      <text class="title">解题记录</text>
+    </view>
+    
+    <scroll-view class="history-scroll" scroll-x="true">
+      <view class="history-item" wx:for="{{historyItems}}" wx:key="id" bindtap="openLearningSession" data-session-id="{{item.sessionId}}">
+        <view class="history-card">
+          <image wx:if="{{item.image}}" class="history-image" src="{{item.image}}" mode="aspectFill"></image>
+          <view wx:else class="history-placeholder">📝</view>
+          <text class="history-title">{{item.title}}</text>
+        </view>
+      </view>
+      <!-- 默认示例数据 -->
+      <view class="history-item" wx:if="{{!historyItems.length}}">
+        <view class="history-card">
+          <view class="history-placeholder">➕</view>
+          <text class="history-title">开始你的第一道题</text>
+        </view>
+      </view>
+      <view class="history-item" wx:if="{{!historyItems.length}}">
+        <view class="history-card">
+          <view class="history-placeholder">🤔</view>
+          <text class="history-title">AI陪你一起思考</text>
+        </view>
+      </view>
+      <view class="history-item" wx:if="{{!historyItems.length}}">
+        <view class="history-card">
+          <view class="history-placeholder">💡</view>
+          <text class="history-title">发现学习的乐趣</text>
+        </view>
+      </view>
+      <view class="history-item" wx:if="{{!historyItems.length}}">
+        <view class="history-card">
+          <view class="history-placeholder">🎯</view>
+          <text class="history-title">提升数学能力</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

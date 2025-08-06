@@ -1,0 +1,543 @@
+/* pages/profile/profile.wxss */
+/* 希希数学小助手 个人资料页面样式 */
+
+.profile-container {
+  min-height: 100vh;
+  background: #f5f6fa;
+  padding-bottom: 40rpx;
+}
+
+/* 加载状态 */
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #666;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 主要内容 */
+.profile-content {
+  padding: 30rpx;
+}
+
+/* 用户信息卡片 */
+.user-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24rpx;
+  padding: 40rpx;
+  margin-bottom: 30rpx;
+  color: white;
+  box-shadow: 0 8rpx 32rpx rgba(102, 126, 234, 0.3);
+}
+
+/* 已登录用户信息 */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 30rpx;
+}
+
+.user-avatar {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.avatar-border {
+  position: absolute;
+  top: -4rpx;
+  left: -4rpx;
+  right: -4rpx;
+  bottom: -4rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.user-id {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.8;
+  margin-bottom: 20rpx;
+}
+
+.user-level {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.level-text {
+  font-size: 26rpx;
+  font-weight: bold;
+}
+
+.level-progress {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: white;
+  border-radius: 4rpx;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  font-size: 22rpx;
+  opacity: 0.9;
+}
+
+/* 未登录状态 */
+.login-prompt {
+  text-align: center;
+}
+
+.login-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 30rpx;
+}
+
+.login-avatar .iconfont {
+  font-size: 60rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.login-info {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.login-title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.login-desc {
+  font-size: 26rpx;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15rpx;
+  background: white;
+  color: #667eea;
+  border-radius: 50rpx;
+  height: 80rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-top: 20rpx;
+  border: none;
+}
+
+.login-btn:active {
+  background: #f8f9fa;
+}
+
+.login-btn .iconfont {
+  font-size: 32rpx;
+}
+
+/* 通用区块样式 */
+.stats-section,
+.achievements-preview,
+.menu-section {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+
+/* 区块标题 */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 25rpx;
+}
+
+.section-title .iconfont {
+  font-size: 36rpx;
+  color: #667eea;
+}
+
+.section-title .icon-arrow-right {
+  margin-left: auto;
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 学习统计 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25rpx;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 25rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+}
+
+.stat-number {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 10rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 成就预览 */
+.achievement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+}
+
+.achievement-item.unlocked {
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+}
+
+.achievement-icon {
+  font-size: 40rpx;
+  width: 60rpx;
+  text-align: center;
+}
+
+.achievement-info {
+  flex: 1;
+}
+
+.achievement-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5rpx;
+}
+
+.achievement-desc {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.4;
+}
+
+.achievement-status {
+  font-size: 32rpx;
+}
+
+.no-achievements {
+  text-align: center;
+  padding: 40rpx 20rpx;
+  color: #999;
+}
+
+.no-achievements .iconfont {
+  font-size: 60rpx;
+  display: block;
+  margin-bottom: 15rpx;
+  opacity: 0.5;
+}
+
+.hint-text {
+  display: block;
+  font-size: 24rpx;
+  margin-top: 10rpx;
+  opacity: 0.7;
+}
+
+/* 功能菜单 */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 25rpx 20rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  margin-bottom: 10rpx;
+  transition: all 0.3s;
+}
+
+.menu-item:active {
+  background: #e9ecef;
+  transform: scale(0.98);
+}
+
+.menu-icon {
+  position: relative;
+  width: 60rpx;
+  height: 60rpx;
+  background: #667eea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-icon .iconfont {
+  font-size: 32rpx;
+  color: white;
+}
+
+.menu-badge {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  background: #ff4757;
+  color: white;
+  font-size: 20rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 12rpx;
+  min-width: 24rpx;
+  text-align: center;
+  line-height: 1;
+}
+
+.menu-info {
+  flex: 1;
+}
+
+.menu-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5rpx;
+}
+
+.menu-desc {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.4;
+}
+
+.menu-arrow {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 快捷操作 */
+.quick-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  border: none;
+  transition: all 0.3s;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.primary:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.secondary {
+  background: white;
+  color: #667eea;
+  border: 2rpx solid #667eea;
+}
+
+.action-btn.secondary:active {
+  background: #f8f9fa;
+}
+
+.action-btn .iconfont {
+  font-size: 32rpx;
+}
+
+/* 版本信息 */
+.version-info {
+  text-align: center;
+  padding: 20rpx;
+  color: #999;
+}
+
+.version-text {
+  display: block;
+  font-size: 24rpx;
+  margin-bottom: 5rpx;
+}
+
+.copyright-text {
+  font-size: 22rpx;
+  opacity: 0.7;
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .profile-content {
+    padding: 20rpx;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 20rpx;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15rpx;
+  }
+  
+  .quick-actions {
+    flex-direction: column;
+  }
+}
+
+/* 动画效果 */
+.user-card,
+.stats-section,
+.achievements-preview,
+.menu-section {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 点击反馈 */
+.section-title:active,
+.achievement-item:active {
+  opacity: 0.7;
+}
+
+/* 徽章动画 */
+.menu-badge {
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4rpx);
+  }
+  60% {
+    transform: translateY(-2rpx);
+  }
+}

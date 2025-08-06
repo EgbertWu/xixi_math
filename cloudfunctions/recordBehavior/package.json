@@ -1,0 +1,20 @@
+{
+  "name": "@希希数学小助手/record-behavior",
+  "version": "1.0.0",
+  "description": "希希数学小助手 记录用户行为数据云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "希希数学小助手",
+    "behavior",
+    "analytics",
+    "education"
+  ],
+  "author": "希希数学小助手 Team",
+  "license": "MIT"
+}

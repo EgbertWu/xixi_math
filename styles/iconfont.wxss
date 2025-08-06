@@ -1,0 +1,83 @@
+/* 希希数学小助手 统一图标字体样式 */
+
+@font-face {
+  font-family: 'iconfont';
+  src: url('//at.alicdn.com/t/font_xxx.woff2') format('woff2'),
+       url('//at.alicdn.com/t/font_xxx.woff') format('woff'),
+       url('//at.alicdn.com/t/font_xxx.ttf') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 32rpx;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 图标映射 - 使用Unicode字符作为备用方案 */
+.icon-camera:before { content: "📷"; }
+.icon-chart:before { content: "📊"; }
+.icon-history:before { content: "📋"; }
+.icon-user:before { content: "👤"; }
+.icon-wechat:before { content: "💬"; }
+.icon-trophy:before { content: "🏆"; }
+.icon-menu:before { content: "☰"; }
+.icon-arrow-right:before { content: "→"; }
+.icon-back:before { content: "←"; }
+.icon-help:before { content: "❓"; }
+.icon-share:before { content: "📤"; }
+.icon-settings:before { content: "⚙️"; }
+.icon-star:before { content: "⭐"; }
+.icon-check:before { content: "✅"; }
+.icon-close:before { content: "❌"; }
+.icon-add:before { content: "➕"; }
+.icon-minus:before { content: "➖"; }
+.icon-multiply:before { content: "✖️"; }
+.icon-divide:before { content: "➗"; }
+.icon-lightbulb:before { content: "💡"; }
+.icon-send:before { content: "📤"; }
+.icon-image:before { content: "🖼️"; }
+.icon-zoom:before { content: "🔍"; }
+.icon-flash-on:before { content: "⚡"; }
+.icon-flash-off:before { content: "🔦"; }
+.icon-switch:before { content: "🔄"; }
+.icon-album:before { content: "📱"; }
+
+/* 图标颜色变体 */
+.icon-primary {
+  color: #667eea;
+}
+
+.icon-success {
+  color: #52C41A;
+}
+
+.icon-warning {
+  color: #FAAD14;
+}
+
+.icon-error {
+  color: #FF4D4F;
+}
+
+.icon-white {
+  color: white;
+}
+
+/* 图标大小变体 */
+.icon-small {
+  font-size: 24rpx;
+}
+
+.icon-medium {
+  font-size: 32rpx;
+}
+
+.icon-large {
+  font-size: 48rpx;
+}
+
+.icon-xlarge {
+  font-size: 64rpx;
+}

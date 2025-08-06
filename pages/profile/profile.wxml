@@ -1,0 +1,151 @@
+<!--pages/profile/profile.wxml-->
+<!-- 希希数学小助手 个人资料页面模板 -->
+
+<view class="profile-container">
+  <!-- 加载状态 -->
+  <view wx:if="{{isLoading}}" class="loading-section">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 主要内容 -->
+  <view wx:else class="profile-content">
+    <!-- 用户信息卡片 -->
+    <view class="user-card">
+      <view wx:if="{{isLogin}}" class="user-info">
+        <!-- 已登录状态 -->
+        <view class="user-avatar">
+          <image src="{{userInfo.avatarUrl}}" class="avatar-image" mode="aspectFill"></image>
+          <view class="avatar-border"></view>
+        </view>
+        
+        <view class="user-details">
+          <text class="user-name">{{userInfo.nickName}}</text>
+          <text class="user-id">ID: {{userInfo.userId || '希希数学小助手用户'}}</text>
+          <view class="user-level">
+            <text class="level-text">学习等级 Lv.{{Math.floor(learningStats.totalQuestions / 5) + 1}}</text>
+            <view class="level-progress">
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: {{(learningStats.totalQuestions % 5) * 20}}%"></view>
+              </view>
+              <text class="progress-text">{{learningStats.totalQuestions % 5}}/5</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <view wx:else class="login-prompt">
+        <!-- 未登录状态 -->
+        <view class="login-avatar">
+          <text class="iconfont icon-user"></text>
+        </view>
+        <view class="login-info">
+          <text class="login-title">登录希希数学小助手</text>
+          <text class="login-desc">登录后可同步学习数据，获得更好的学习体验</text>
+          <button class="login-btn" bindtap="handleLogin">
+            <text class="iconfont icon-wechat"></text>
+            <text>微信登录</text>
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 学习统计 -->
+    <view class="stats-section">
+      <view class="section-title">
+        <text class="iconfont icon-chart"></text>
+        <text>学习统计</text>
+      </view>
+      
+      <view class="stats-grid">
+        <view class="stat-item">
+          <view class="stat-number">{{learningStats.totalQuestions}}</view>
+          <text class="stat-label">完成题目</text>
+        </view>
+        
+        <view class="stat-item">
+          <view class="stat-number">{{learningStats.completedSessions}}</view>
+          <text class="stat-label">学习会话</text>
+        </view>
+        
+        <view class="stat-item">
+          <view class="stat-number">{{Math.floor(learningStats.learningTime / 60)}}h{{learningStats.learningTime % 60}}m</view>
+          <text class="stat-label">学习时长</text>
+        </view>
+        
+        <view class="stat-item">
+          <view class="stat-number">{{learningStats.averageScore || 0}}</view>
+          <text class="stat-label">平均分数</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 成就预览 -->
+    <view class="achievements-preview">
+      <view class="section-title" bindtap="viewAchievements">
+        <text class="iconfont icon-trophy"></text>
+        <text>最新成就</text>
+        <text class="iconfont icon-arrow-right"></text>
+      </view>
+      
+      <view class="achievement-list">
+        <view wx:for="{{achievements}}" wx:key="id" wx:if="{{item.unlocked}}" class="achievement-item">
+          <view class="achievement-icon">{{item.icon}}</view>
+          <view class="achievement-info">
+            <text class="achievement-name">{{item.name}}</text>
+            <text class="achievement-desc">{{item.description}}</text>
+          </view>
+          <text class="achievement-status">✅</text>
+        </view>
+        <view wx:if="{{unlockedAchievements.length === 0}}" class="no-achievements">
+          <text class="iconfont icon-trophy"></text>
+          <text>暂无解锁成就</text>
+          <text class="hint-text">完成学习任务来解锁成就吧！</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 功能菜单 -->
+    <view class="menu-section">
+      <view class="section-title">
+        <text class="iconfont icon-menu"></text>
+        <text>功能菜单</text>
+      </view>
+      
+      <view class="menu-list">
+        <view wx:for="{{menuItems}}" wx:key="id" class="menu-item" bindtap="onMenuItemTap" data-id="{{item.id}}">
+          <view class="menu-icon">
+            <text class="iconfont {{item.icon}}"></text>
+            <view wx:if="{{item.badge}}" class="menu-badge">{{item.badge}}</view>
+          </view>
+          
+          <view class="menu-info">
+            <text class="menu-name">{{item.name}}</text>
+            <text class="menu-desc">{{item.desc}}</text>
+          </view>
+          
+          <text class="iconfont icon-arrow-right menu-arrow"></text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="quick-actions">
+      <button class="action-btn primary" bindtap="continueNewLearning">
+        <text class="iconfont icon-camera"></text>
+        <text>开始学习</text>
+      </button>
+      
+      <button class="action-btn secondary" open-type="share">
+        <text class="iconfont icon-share"></text>
+        <text>分享给朋友</text>
+      </button>
+    </view>
+
+    <!-- 版本信息 -->
+    <view class="version-info">
+      <text class="version-text">希希数学小助手 v1.0.0</text>
+      <text class="copyright-text">© 2024 希希数学小助手 Team</text>
+    </view>
+  </view>
+</view>

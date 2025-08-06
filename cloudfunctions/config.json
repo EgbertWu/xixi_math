@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "openapi": [
+      "customerServiceMessage.send",
+      "templateMessage.send",
+      "wxacode.get",
+      "wxacode.getUnlimited",
+      "ocr.printedText"
+    ]
+  },
+  "environment": "cloud1-8g4cl3p21c582f6e"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@希希数学小助手/handle-answer",
+  "version": "1.0.0",
+  "description": "希希数学小助手 处理学生回答云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "axios": "^1.6.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "希希数学小助手",
+    "ai",
+    "education",
+    "dialogue"
+  ],
+  "author": "希希数学小助手 Team",
+  "license": "MIT"
+}

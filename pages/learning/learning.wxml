@@ -1,0 +1,181 @@
+<!--pages/learning/learning.wxml-->
+<!-- 希希数学小助手 学习对话页面模板 -->
+
+<view class="learning-container">
+  <!-- 顶部导航栏 -->
+  <view class="nav-header">
+    <view class="nav-left">
+      <view class="back-btn" bindtap="exitLearning">
+        <text class="iconfont icon-back icon-white"></text>
+      </view>
+      <view class="nav-title">
+        <text class="title-text">AI数学辅导</text>
+        <text class="subtitle-text">第{{currentRound}}/{{maxRounds}}轮</text>
+      </view>
+    </view>
+    
+    <view class="nav-right">
+      <view class="help-btn" bindtap="getHint">
+        <text class="iconfont icon-help icon-white"></text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 题目展示区域 -->
+  <view class="question-section card">
+    <view class="question-header">
+      <image class="question-icon" src="/images/question.png"></image>
+      <text class="question-label">题目内容</text>
+      <view class="question-actions">
+        <view class="action-btn" bindtap="previewImage" wx:if="{{questionImage}}">
+          <image class="icon" src="/images/image.png"></image>
+        </view>
+      </view>
+    </view>
+    
+    <view class="question-content">
+      <text class="question-text">{{questionText}}</text>
+    </view>
+    
+    <view class="question-image" wx:if="{{questionImage}}" bindtap="previewImage">
+      <image class="image" src="{{questionImage}}" mode="aspectFit"></image>
+      <view class="image-overlay">
+        <image class="zoom-icon" src="/images/zoom.png"></image>
+      </view>
+    </view>
+  </view>
+
+  <!-- 对话消息区域 -->
+  <view class="messages-section" id="messages-container">
+    <view class="message-item {{item.type}}" wx:for="{{messages}}" wx:key="timestamp">
+      <!-- 系统消息 -->
+      <view class="system-message" wx:if="{{item.type === 'system'}}">
+        <view class="system-content">
+          <image class="system-icon" src="/images/check-circle.png"></image>
+          <text class="system-text">{{item.content}}</text>
+        </view>
+      </view>
+      
+      <!-- AI消息 -->
+      <view class="ai-message" wx:if="{{item.type === 'ai'}}">
+        <view class="message-header">
+          <image class="avatar" src="/images/ai-avatar.png"></image>
+          <view class="sender-info">
+            <text class="sender-name">AI老师</text>
+            <text class="message-time">{{item.timestamp}}</text>
+          </view>
+          <view class="round-badge" wx:if="{{item.round}}">
+            <text class="round-text">第{{item.round}}轮</text>
+          </view>
+        </view>
+        <view class="message-bubble ai-bubble">
+          <text class="message-text">{{item.content}}</text>
+        </view>
+      </view>
+      
+      <!-- 用户消息 -->
+      <view class="user-message" wx:if="{{item.type === 'user'}}">
+        <view class="message-header">
+          <view class="round-badge" wx:if="{{item.round}}">
+            <text class="round-text">第{{item.round}}轮</text>
+          </view>
+          <view class="sender-info">
+            <text class="sender-name">我的回答</text>
+            <text class="message-time">{{item.timestamp}}</text>
+          </view>
+          <image class="avatar" src="/images/user-avatar.png"></image>
+        </view>
+        <view class="message-bubble user-bubble">
+          <text class="message-text">{{item.content}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- AI思考中状态 -->
+    <view class="thinking-message" wx:if="{{isAIThinking}}">
+      <view class="message-header">
+        <image class="avatar" src="/images/ai-avatar.png"></image>
+        <view class="sender-info">
+          <text class="sender-name">AI老师</text>
+          <text class="message-time">正在思考...</text>
+        </view>
+      </view>
+      <view class="message-bubble thinking-bubble">
+        <view class="thinking-animation">
+          <view class="thinking-dot"></view>
+          <view class="thinking-dot"></view>
+          <view class="thinking-dot"></view>
+        </view>
+        <text class="thinking-text">{{thinkingTexts[currentThinkingIndex]}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 输入区域 -->
+  <view class="input-section" wx:if="{{!isSessionComplete}}">
+    <view class="input-container">
+      <view class="input-wrapper">
+        <textarea 
+          class="input-field"
+          placeholder="{{inputPlaceholder}}"
+          value="{{userInput}}"
+          bindinput="onInputChange"
+          maxlength="500"
+          auto-height
+          show-confirm-bar="{{false}}"
+          cursor-spacing="20"
+        ></textarea>
+        <view class="input-counter">
+          <text class="counter-text">{{userInput.length}}/500</text>
+        </view>
+      </view>
+      
+      <view class="send-btn {{userInput.trim() ? 'active' : ''}}" bindtap="sendAnswer">
+        <image class="send-icon" src="/images/send.png"></image>
+      </view>
+    </view>
+    
+    <view class="input-tips">
+      <view class="tip-item">
+        <image class="tip-icon" src="/images/lightbulb.png"></image>
+        <text class="tip-text">详细描述你的思考过程会获得更好的指导</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 会话完成状态 -->
+  <view class="completion-section" wx:if="{{isSessionComplete}}">
+    <view class="completion-content">
+      <image class="completion-icon" src="/images/trophy.png"></image>
+      <text class="completion-title">学习完成！</text>
+      <text class="completion-desc">恭喜你完成了这道题的学习，正在为你生成学习报告...</text>
+      
+      <view class="completion-actions">
+        <button class="btn-primary" bindtap="goToResult">
+          查看学习报告
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 进度指示器 -->
+  <view class="progress-indicator">
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{(currentRound / maxRounds) * 100}}%"></view>
+    </view>
+    <view class="progress-steps">
+      <view class="step {{currentRound >= 1 ? 'completed' : ''}} {{currentRound === 1 ? 'current' : ''}}">
+        <view class="step-dot"></view>
+        <text class="step-label">第1轮</text>
+      </view>
+      <view class="step {{currentRound >= 2 ? 'completed' : ''}} {{currentRound === 2 ? 'current' : ''}}">
+        <view class="step-dot"></view>
+        <text class="step-label">第2轮</text>
+      </view>
+      <view class="step {{currentRound >= 3 ? 'completed' : ''}} {{currentRound === 3 ? 'current' : ''}}">
+        <view class="step-dot"></view>
+        <text class="step-label">第3轮</text>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,223 @@
+<!--pages/result/result.wxml-->
+<!-- 希希数学小助手 学习结果页面模板 -->
+
+<view class="result-container">
+  <!-- 加载状态 -->
+  <view wx:if="{{isLoading}}" class="loading-section">
+    <view class="loading-animation">
+      <view class="loading-circle"></view>
+      <view class="loading-circle"></view>
+      <view class="loading-circle"></view>
+    </view>
+    <text class="loading-text">{{loadingText}}</text>
+  </view>
+
+  <!-- 报告内容 -->
+  <view wx:else class="report-content">
+    <!-- 顶部导航 -->
+    <view class="top-nav">
+      <view class="nav-left" bindtap="goHome">
+        <text class="iconfont icon-back"></text>
+        <text>返回</text>
+      </view>
+      <view class="nav-title">学习报告</view>
+      <view class="nav-right" bindtap="shareResult">
+        <text class="iconfont icon-share"></text>
+        <text>分享</text>
+      </view>
+    </view>
+
+    <!-- 成绩概览卡片 -->
+    <view class="score-card">
+      <view class="score-header">
+        <text class="score-title">学习完成！</text>
+        <view class="score-badge score-{{reportData.performance.level}}">
+          <text>{{reportData.performance.level}}</text>
+        </view>
+      </view>
+      
+      <view class="score-main">
+        <view class="score-circle">
+          <view class="score-number">{{reportData.performance.score}}</view>
+          <view class="score-total">/100</view>
+        </view>
+        
+        <view class="score-details">
+          <view class="detail-item">
+            <text class="detail-label">学习时长</text>
+            <text class="detail-value">{{reportData.totalTime}}分钟</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">完成轮次</text>
+            <text class="detail-value">{{reportData.completedRounds}}/{{reportData.totalRounds}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 题目回顾 -->
+    <view class="question-review">
+      <view class="section-title">
+        <text class="iconfont icon-question"></text>
+        <text>题目回顾</text>
+      </view>
+      <view class="question-content">
+        <text>{{reportData.questionText}}</text>
+      </view>
+    </view>
+
+    <!-- 思维能力分析 -->
+    <view class="thinking-analysis">
+      <view class="section-title" bindtap="viewDetailAnalysis" data-type="thinking">
+        <text class="iconfont icon-brain"></text>
+        <text>思维能力分析</text>
+        <text class="iconfont icon-arrow-right"></text>
+      </view>
+      
+      <view class="thinking-grid">
+        <view class="thinking-item">
+          <text class="thinking-label">逻辑思维</text>
+          <view class="star-rating">
+            <block wx:for="{{[1,2,3,4,5]}}" wx:key="*this">
+              <text class="star {{item <= reportData.thinkingAnalysis.logicalThinking ? 'filled' : ''}}">★</text>
+            </block>
+          </view>
+        </view>
+        
+        <view class="thinking-item">
+          <text class="thinking-label">问题解决</text>
+          <view class="star-rating">
+            <block wx:for="{{[1,2,3,4,5]}}" wx:key="*this">
+              <text class="star {{item <= reportData.thinkingAnalysis.problemSolving ? 'filled' : ''}}">★</text>
+            </block>
+          </view>
+        </view>
+        
+        <view class="thinking-item">
+          <text class="thinking-label">表达能力</text>
+          <view class="star-rating">
+            <block wx:for="{{[1,2,3,4,5]}}" wx:key="*this">
+              <text class="star {{item <= reportData.thinkingAnalysis.communication ? 'filled' : ''}}">★</text>
+            </block>
+          </view>
+        </view>
+        
+        <view class="thinking-item">
+          <text class="thinking-label">创新思维</text>
+          <view class="star-rating">
+            <block wx:for="{{[1,2,3,4,5]}}" wx:key="*this">
+              <text class="star {{item <= reportData.thinkingAnalysis.creativity ? 'filled' : ''}}">★</text>
+            </block>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 优势与改进 -->
+    <view class="performance-section">
+      <!-- 优势点 -->
+      <view wx:if="{{reportData.performance.strengths.length > 0}}" class="strengths">
+        <view class="section-title">
+          <text class="iconfont icon-thumbs-up"></text>
+          <text>你的优势</text>
+        </view>
+        <view class="strength-list">
+          <view wx:for="{{reportData.performance.strengths}}" wx:key="index" class="strength-item">
+            <text class="strength-icon">✓</text>
+            <text class="strength-text">{{item}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 改进建议 -->
+      <view wx:if="{{reportData.performance.improvements.length > 0}}" class="improvements">
+        <view class="section-title">
+          <text class="iconfont icon-lightbulb"></text>
+          <text>改进建议</text>
+        </view>
+        <view class="improvement-list">
+          <view wx:for="{{reportData.performance.improvements}}" wx:key="index" class="improvement-item">
+            <text class="improvement-icon">💡</text>
+            <text class="improvement-text">{{item}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 知识点掌握 -->
+    <view wx:if="{{reportData.knowledgePoints.length > 0}}" class="knowledge-section">
+      <view class="section-title" bindtap="viewDetailAnalysis" data-type="knowledge">
+        <text class="iconfont icon-book"></text>
+        <text>知识点掌握</text>
+        <text class="iconfont icon-arrow-right"></text>
+      </view>
+      
+      <view class="knowledge-list">
+        <view wx:for="{{reportData.knowledgePoints}}" wx:key="index" class="knowledge-item">
+          <view class="knowledge-header">
+            <text class="knowledge-name">{{item.name}}</text>
+            <text class="knowledge-mastery">{{item.mastery}}%</text>
+          </view>
+          <view class="knowledge-progress">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: {{item.mastery}}%"></view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 学习建议 -->
+    <view wx:if="{{reportData.suggestions.length > 0}}" class="suggestions-section">
+      <view class="section-title" bindtap="viewDetailAnalysis" data-type="suggestions">
+        <text class="iconfont icon-suggestion"></text>
+        <text>学习建议</text>
+        <text class="iconfont icon-arrow-right"></text>
+      </view>
+      
+      <view class="suggestion-preview">
+        <text class="suggestion-text">{{reportData.suggestions[0]}}</text>
+        <text wx:if="{{reportData.suggestions.length > 1}}" class="more-text">等{{reportData.suggestions.length}}条建议</text>
+      </view>
+    </view>
+
+    <!-- 下一步学习计划 -->
+    <view wx:if="{{reportData.nextSteps.length > 0}}" class="next-steps-section">
+      <view class="section-title">
+        <text class="iconfont icon-target"></text>
+        <text>下一步学习计划</text>
+      </view>
+      
+      <view class="next-steps-list">
+        <view wx:for="{{reportData.nextSteps}}" wx:key="index" class="next-step-item">
+          <view class="step-number">{{index + 1}}</view>
+          <text class="step-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button class="action-btn primary" bindtap="continueNewLearning">
+        <text class="iconfont icon-camera"></text>
+        <text>继续学习</text>
+      </button>
+      
+      <button class="action-btn secondary" bindtap="viewLearningHistory">
+        <text class="iconfont icon-history"></text>
+        <text>学习历史</text>
+      </button>
+      
+      <button class="action-btn secondary" bindtap="saveReportToAlbum">
+        <text class="iconfont icon-download"></text>
+        <text>保存报告</text>
+      </button>
+    </view>
+
+    <!-- 底部信息 -->
+    <view class="footer-info">
+      <text class="footer-text">本报告由希希数学小助手智能生成</text>
+      <text class="footer-time">生成时间：{{reportData.generateTime || '刚刚'}}</text>
+    </view>
+  </view>
+</view>

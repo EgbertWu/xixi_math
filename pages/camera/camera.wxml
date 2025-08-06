@@ -1,0 +1,124 @@
+<!--pages/camera/camera.wxml-->
+<!-- 希希数学小助手 拍照识别页面模板 -->
+
+<view class="camera-container">
+  <!-- 摄像头区域 -->
+  <view class="camera-section" wx:if="{{!showPreview}}">
+    <camera 
+      class="camera" 
+      device-position="{{cameraPosition}}"
+      flash="{{flash}}"
+      binderror="onCameraError"
+      frame-size="large">
+      
+      <!-- 摄像头覆盖层 -->
+      <cover-view class="camera-overlay">
+        <!-- 顶部工具栏 -->
+        <cover-view class="top-toolbar">
+          <cover-view class="back-btn" bindtap="goBack">
+            <cover-view class="iconfont icon-back icon-white"></cover-view>
+          </cover-view>
+          
+          <cover-view class="camera-tools">
+            <cover-view class="tool-btn" bindtap="toggleFlash">
+              <cover-view class="iconfont icon-flash-{{flash}} icon-white"></cover-view>
+            </cover-view>
+            <cover-view class="tool-btn" bindtap="switchCamera">
+              <cover-view class="iconfont icon-switch icon-white"></cover-view>
+            </cover-view>
+          </cover-view>
+        </cover-view>
+        
+        <!-- 拍照引导框 -->
+        <cover-view class="guide-frame">
+          <cover-view class="frame-corner tl"></cover-view>
+          <cover-view class="frame-corner tr"></cover-view>
+          <cover-view class="frame-corner bl"></cover-view>
+          <cover-view class="frame-corner br"></cover-view>
+        </cover-view>
+        
+        <!-- 提示信息 -->
+        <cover-view class="tips-section">
+          <cover-view class="tip-text">{{tips[currentTipIndex]}}</cover-view>
+        </cover-view>
+        
+        <!-- 底部操作栏 -->
+        <cover-view class="bottom-toolbar">
+          <cover-view class="album-btn" bindtap="chooseFromAlbum">
+            <cover-image class="icon" src="/images/album.png"></cover-image>
+            <cover-view class="btn-text">相册</cover-view>
+          </cover-view>
+          
+          <cover-view class="capture-btn" bindtap="takePhoto">
+            <cover-view class="capture-inner"></cover-view>
+          </cover-view>
+          
+          <cover-view class="placeholder"></cover-view>
+        </cover-view>
+      </cover-view>
+    </camera>
+  </view>
+  
+  <!-- 图片预览区域 -->
+  <view class="preview-section" wx:if="{{showPreview && !isProcessing}}">
+    <view class="preview-header">
+      <view class="back-btn" bindtap="goBack">
+        <image class="icon" src="/images/back.png"></image>
+      </view>
+      <text class="preview-title">确认照片</text>
+      <view class="placeholder"></view>
+    </view>
+    
+    <view class="preview-content">
+      <image class="preview-image" src="{{imagePath}}" mode="aspectFit"></image>
+      
+      <view class="preview-tips">
+        <image class="tip-icon" src="/images/check.png"></image>
+        <text class="tip-text">请确认题目清晰完整</text>
+      </view>
+    </view>
+    
+    <view class="preview-actions">
+      <button class="btn-secondary" bindtap="retakePhoto">
+        重新拍照
+      </button>
+      <button class="btn-primary" bindtap="confirmPhoto">
+        确认使用
+      </button>
+    </view>
+  </view>
+  
+  <!-- 处理中状态 -->
+  <view class="processing-section" wx:if="{{isProcessing}}">
+    <view class="processing-content">
+      <view class="loading-animation">
+        <view class="loading-circle"></view>
+        <view class="loading-circle"></view>
+        <view class="loading-circle"></view>
+      </view>
+      
+      <text class="processing-text">{{processingText}}</text>
+      
+      <view class="processing-steps">
+        <view class="step-item {{processingText.indexOf('识别') !== -1 ? 'active' : ''}}">
+          <view class="step-dot"></view>
+          <text class="step-text">识别题目</text>
+        </view>
+        <view class="step-line"></view>
+        <view class="step-item {{processingText.indexOf('分析') !== -1 ? 'active' : ''}}">
+          <view class="step-dot"></view>
+          <text class="step-text">分析内容</text>
+        </view>
+        <view class="step-line"></view>
+        <view class="step-item">
+          <view class="step-dot"></view>
+          <text class="step-text">生成问题</text>
+        </view>
+      </view>
+      
+      <view class="processing-tips">
+        <text class="tip-text">AI正在为您准备个性化的学习体验...</text>
+      </view>
+    </view>
+  </view>
+</view>

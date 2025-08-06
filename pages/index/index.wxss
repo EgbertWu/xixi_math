@@ -1,0 +1,281 @@
+/* pages/index/index.wxss */
+/* 希希数学小助手 首页样式 - 统一设计风格 */
+
+page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background-color: #f5f6fa;
+  color: #333;
+  line-height: 1.6;
+}
+
+.container {
+  min-height: 100vh;
+  padding-bottom: 120rpx; /* 为底部导航栏留空间 */
+}
+
+/* 头部区域 */
+.header {
+  position: sticky;
+  top: 0;
+  background-color: rgba(245, 246, 250, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  padding: 30rpx;
+  padding-top: 32rpx;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.logo {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.2);
+}
+
+.app-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 主要功能卡片 */
+.main-feature-card {
+  margin: 30rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24rpx;
+  padding: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  height: 384rpx;
+  box-shadow: 0 8rpx 32rpx rgba(102, 126, 234, 0.3);
+  animation: slideInUp 0.6s ease-out;
+}
+
+.camera-icon {
+  margin-bottom: 16rpx;
+  position: relative;
+}
+
+.icon-camera {
+  font-size: 120rpx;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.feature-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.feature-desc {
+  font-size: 26rpx;
+  opacity: 0.8;
+  line-height: 1.5;
+  white-space: pre-line;
+  text-align: center;
+}
+
+/* 进度区域 */
+.progress-section {
+  padding: 0 30rpx;
+  margin-bottom: 30rpx;
+  animation: slideInUp 0.6s ease-out;
+}
+
+.progress-text {
+  display: block;
+  font-size: 26rpx;
+  text-align: center;
+  color: #52C41A;
+  font-weight: 500;
+  margin-bottom: 16rpx;
+}
+
+.progress-bar {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4rpx;
+  height: 8rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background-color: #52C41A;
+  height: 8rpx;
+  border-radius: 4rpx;
+  width: 75%;
+  transition: width 0.5s ease;
+}
+
+/* 成长记录区域 */
+.stats-section {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin: 0 30rpx 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  animation: slideInUp 0.6s ease-out;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 25rpx;
+}
+
+.section-title .iconfont {
+  font-size: 36rpx;
+  color: #667eea;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25rpx;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 25rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+}
+
+.stat-label {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.stat-number {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.stat-number.accuracy {
+  color: #52C41A;
+}
+
+/* 解题记录区域 */
+.history-section {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin: 0 30rpx 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  animation: slideInUp 0.6s ease-out;
+}
+
+.history-scroll {
+  white-space: nowrap;
+  padding-bottom: 16rpx;
+}
+
+.history-item {
+  display: inline-block;
+  width: 288rpx;
+  margin-right: 32rpx;
+  flex-shrink: 0;
+}
+
+.history-card {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.history-card:active {
+  transform: scale(0.98);
+}
+
+.history-image {
+  width: 100%;
+  height: 192rpx;
+  object-fit: cover;
+}
+
+.history-placeholder {
+  width: 100%;
+  height: 192rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60rpx;
+  background: #f8f9fa;
+  color: #999;
+}
+
+.history-title {
+  display: block;
+  padding: 20rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  text-align: center;
+  color: #333;
+  line-height: 1.4;
+}
+
+/* 动画效果 */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .header {
+    padding: 20rpx;
+  }
+  
+  .main-feature-card {
+    margin: 20rpx;
+    padding: 30rpx;
+  }
+  
+  .stats-section,
+  .history-section {
+    margin: 0 20rpx 20rpx;
+    padding: 25rpx;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15rpx;
+  }
+}

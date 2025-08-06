@@ -1,0 +1,532 @@
+/* pages/result/result.wxss */
+/* 希希数学小助手 学习结果页面样式 */
+
+.result-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding-bottom: 40rpx;
+}
+
+/* 加载状态 */
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: white;
+}
+
+.loading-animation {
+  display: flex;
+  gap: 10rpx;
+  margin-bottom: 40rpx;
+}
+
+.loading-circle {
+  width: 20rpx;
+  height: 20rpx;
+  background: white;
+  border-radius: 50%;
+  animation: loading-bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-circle:nth-child(1) { animation-delay: -0.32s; }
+.loading-circle:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes loading-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.loading-text {
+  font-size: 32rpx;
+  opacity: 0.8;
+}
+
+/* 报告内容 */
+.report-content {
+  padding: 0 30rpx;
+}
+
+/* 顶部导航 */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60rpx 0 20rpx;
+  margin-bottom: 30rpx;
+  color: white;
+}
+
+.nav-left,
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  font-size: 26rpx;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.nav-left:active,
+.nav-right:active {
+  opacity: 0.7;
+  transform: scale(0.95);
+}
+
+.nav-title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+/* 成绩概览卡片 */
+.score-card {
+  background: white;
+  border-radius: 24rpx;
+  padding: 40rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.score-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30rpx;
+}
+
+.score-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.score-badge {
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: white;
+  font-weight: bold;
+}
+
+.score-badge.score-excellent { background: #4CAF50; }
+.score-badge.score-good { background: #2196F3; }
+.score-badge.score-pass { background: #FF9800; }
+.score-badge.score-improve { background: #F44336; }
+
+.score-main {
+  display: flex;
+  align-items: center;
+  gap: 40rpx;
+}
+
+.score-circle {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.score-number {
+  font-size: 48rpx;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.score-total {
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+.score-details {
+  flex: 1;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.detail-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 通用卡片样式 */
+.question-review,
+.thinking-analysis,
+.performance-section,
+.knowledge-section,
+.suggestions-section,
+.next-steps-section {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+
+/* 区块标题 */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 25rpx;
+}
+
+.section-title .iconfont {
+  font-size: 36rpx;
+  color: #667eea;
+}
+
+.section-title .icon-arrow-right {
+  margin-left: auto;
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 题目回顾 */
+.question-content {
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  padding: 25rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* 思维能力分析 */
+.thinking-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25rpx;
+}
+
+.thinking-item {
+  text-align: center;
+}
+
+.thinking-label {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.star-rating {
+  display: flex;
+  justify-content: center;
+  gap: 5rpx;
+}
+
+.star {
+  font-size: 32rpx;
+  color: #ddd;
+  transition: color 0.3s;
+}
+
+.star.filled {
+  color: #FFD700;
+}
+
+/* 优势与改进 */
+.strengths,
+.improvements {
+  margin-bottom: 30rpx;
+}
+
+.strengths:last-child,
+.improvements:last-child {
+  margin-bottom: 0;
+}
+
+.strength-list,
+.improvement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.strength-item,
+.improvement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15rpx;
+  padding: 15rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.strength-icon {
+  color: #4CAF50;
+  font-weight: bold;
+  font-size: 28rpx;
+}
+
+.improvement-icon {
+  font-size: 28rpx;
+}
+
+.strength-text,
+.improvement-text {
+  flex: 1;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* 知识点掌握 */
+.knowledge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.knowledge-item {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.knowledge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15rpx;
+}
+
+.knowledge-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.knowledge-mastery {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.knowledge-progress {
+  width: 100%;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8rpx;
+  background: #e0e0e0;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 4rpx;
+  transition: width 0.5s ease;
+}
+
+/* 学习建议 */
+.suggestion-preview {
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  padding: 20rpx;
+}
+
+.suggestion-text {
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #333;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.more-text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 下一步学习计划 */
+.next-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.next-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15rpx;
+  padding: 15rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.step-number {
+  width: 40rpx;
+  height: 40rpx;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.step-text {
+  flex: 1;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #333;
+  padding-top: 5rpx;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin: 40rpx 0;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  transition: all 0.3s;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.primary:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.secondary {
+  background: white;
+  color: #667eea;
+  border: 2rpx solid #667eea;
+}
+
+.action-btn.secondary:active {
+  background: #f8f9fa;
+}
+
+.action-btn .iconfont {
+  font-size: 36rpx;
+}
+
+/* 底部信息 */
+.footer-info {
+  text-align: center;
+  padding: 30rpx 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footer-text {
+  display: block;
+  font-size: 24rpx;
+  margin-bottom: 10rpx;
+}
+
+.footer-time {
+  font-size: 22rpx;
+  opacity: 0.8;
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .result-container {
+    padding: 0 20rpx;
+  }
+  
+  .score-main {
+    flex-direction: column;
+    gap: 20rpx;
+    text-align: center;
+  }
+  
+  .thinking-grid {
+    grid-template-columns: 1fr;
+    gap: 20rpx;
+  }
+}
+
+/* 动画效果 */
+.score-card,
+.question-review,
+.thinking-analysis,
+.performance-section,
+.knowledge-section,
+.suggestions-section,
+.next-steps-section {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 卡片悬停效果 */
+.section-title:active {
+  opacity: 0.7;
+}
+
+/* 进度条动画 */
+.progress-fill {
+  animation: progressFill 1s ease-out 0.5s both;
+}
+
+@keyframes progressFill {
+  from {
+    width: 0 !important;
+  }
+}
