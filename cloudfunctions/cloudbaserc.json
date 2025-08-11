@@ -1,0 +1,48 @@
+{
+  "envId": "cloud1-8g4cl3p21c582f6e",
+  "functionRoot": "./",
+  "functions": [
+    {
+      "name": "analyzeQuestion",
+      "timeout": 60,
+      "envVariables": {},
+      "runtime": "Nodejs16.13",
+      "memorySize": 256
+    },
+    {
+      "name": "handleAnswer", 
+      "timeout": 60,
+      "envVariables": {},
+      "runtime": "Nodejs16.13",
+      "memorySize": 256
+    },
+    {
+      "name": "generateReport",
+      "timeout": 60,
+      "envVariables": {},
+      "runtime": "Nodejs16.13",
+      "memorySize": 256
+    },
+    {
+      "name": "getUserHistory",
+      "timeout": 30,
+      "envVariables": {},
+      "runtime": "Nodejs16.13",
+      "memorySize": 128
+    },
+    {
+      "name": "recordBehavior",
+      "timeout": 30,
+      "envVariables": {},
+      "runtime": "Nodejs16.13",
+      "memorySize": 128
+    },
+    {
+      "name": "syncUserData",
+      "timeout": 30,
+      "envVariables": {},
+      "runtime": "Nodejs16.13",
+      "memorySize": 128
+    }
+  ]
+}

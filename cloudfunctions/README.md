@@ -47,7 +47,7 @@ cp .env.example .env
 
 ```bash
 # 初始化数据库集合
-node init-database.js
+node init-nosql-database.js
 ```
 
 ### 3. 部署云函数
@@ -59,15 +59,6 @@ node deploy.js
 # 部署指定云函数
 node deploy.js analyzeQuestion
 ```
-
-### 4. 测试云函数
-
-```bash
-# 测试所有云函数
-node test-functions.js
-
-# 测试指定云函数
-node test-functions.js syncUserData
 ```
 
 ## 🔧 开发配置

@@ -2,7 +2,7 @@
 // 处理学生回答，生成AI反馈和下一个问题
 
 const cloud = require('wx-server-sdk')
-const axios = require('axios')
+const OpenAI = require('openai')
 
 // 初始化云开发
 cloud.init({
@@ -11,6 +11,12 @@ cloud.init({
 
 const db = cloud.database()
 const _ = db.command
+
+// 初始化OpenAI客户端（千问兼容接口）
+const openai = new OpenAI({
+  apiKey: process.env.QWEN_API_KEY,
+  baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+})
 
 /**
  * 云函数入口函数
@@ -29,11 +35,7 @@ exports.main = async (event, context) => {
     
     // 参数验证
     if (!sessionId || !userId || !answer || currentRound === undefined) {
-      return {
-        success: false,
-        error: '缺少必要参数',
-        code: 'MISSING_PARAMS'
-      }
+      return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
     }
     
     // 1. 获取会话数据
@@ -46,11 +48,7 @@ exports.main = async (event, context) => {
       .get()
     
     if (sessionResult.data.length === 0) {
-      return {
-        success: false,
-        error: '会话不存在',
-        code: 'SESSION_NOT_FOUND'
-      }
+      return createErrorResponse('会话不存在', 'SESSION_NOT_FOUND')
     }
     
     const sessionData = sessionResult.data[0]
@@ -67,11 +65,7 @@ exports.main = async (event, context) => {
     )
     
     if (!aiResult.success) {
-      return {
-        success: false,
-        error: 'AI分析失败: ' + aiResult.error,
-        code: 'AI_ANALYSIS_FAILED'
-      }
+      return createErrorResponse('AI分析失败: ' + aiResult.error, 'AI_ANALYSIS_FAILED')
     }
     
     // 3. 更新对话记录
@@ -109,11 +103,7 @@ exports.main = async (event, context) => {
     }
     
     console.log('更新会话数据...')
-    await db.collection('learning_sessions')
-      .doc(sessionData._id)
-      .update({
-        data: updateData
-      })
+    await updateSessionData(sessionData._id, updateData)
     
     // 6. 记录用户行为
     await recordUserBehavior(userId, 'answer_submitted', {
@@ -149,19 +139,14 @@ exports.main = async (event, context) => {
     
   } catch (error) {
     console.error('handleAnswer 云函数执行失败:', error)
-    
-    return {
-      success: false,
-      error: error.message || '服务器内部错误',
-      code: 'INTERNAL_ERROR'
-    }
+    return createErrorResponse(error.message || '服务器内部错误', 'INTERNAL_ERROR')
   }
 }
 
 /**
- * 使用AI分析学生回答
+ * 使用预设问题序列进行追问式教学
  * @param {string} questionText - 原题目
- * @param {Object} aiAnalysis - AI题目分析
+ * @param {Object} aiAnalysis - AI题目分析（包含预设问题）
  * @param {string} answer - 学生回答
  * @param {number} currentRound - 当前轮次
  * @param {Array} dialogue - 对话历史
@@ -169,99 +154,25 @@ exports.main = async (event, context) => {
  */
 async function analyzeAnswerWithAI(questionText, aiAnalysis, answer, currentRound, dialogue) {
   try {
-    // 构建对话上下文
-    const conversationHistory = dialogue.map(item => {
-      return {
-        role: item.type === 'user' ? 'user' : 'assistant',
-        content: item.content
-      }
-    })
+    // 🎯 使用预设的问题序列
+    const presetQuestions = aiAnalysis.questions || []
     
-    // 构建系统提示
-    const systemPrompt = `你是一位经验丰富的小学数学老师，正在使用苏格拉底式教学法指导学生。
-
-原题目：${questionText}
-题目分析：${JSON.stringify(aiAnalysis)}
-当前轮次：${currentRound}/3
-
-请根据学生的回答给出反馈，并提出下一个启发式问题。要求：
-1. 对学生的回答给予积极的反馈，指出正确的部分
-2. 如果有错误，不要直接指出，而是通过问题引导学生发现
-3. 根据轮次调整问题难度：第1轮基础理解，第2轮深入分析，第3轮综合应用
-4. 语言要鼓励性，适合小学生
-5. 如果是第3轮，可以引导学生总结解题思路
-
-请以JSON格式返回：
-{
-  "feedback": "对学生回答的反馈",
-  "nextQuestion": "下一个启发式问题",
-  "analysis": {
-    "understanding_level": "理解程度(1-5)",
-    "thinking_quality": "思维质量(1-5)",
-    "communication_clarity": "表达清晰度(1-5)",
-    "suggestions": ["改进建议"]
-  }
-}`
-    
-    const messages = [
-      {
-        role: 'system',
-        content: systemPrompt
-      },
-      ...conversationHistory,
-      {
-        role: 'user',
-        content: answer
-      }
-    ]
-    
-    // 调用通义千问API
-    const response = await axios.post(
-      'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
-      {
-        model: 'qwen-turbo',
-        input: {
-          messages: messages
-        },
-        parameters: {
-          temperature: 0.7,
-          max_tokens: 1000,
-          top_p: 0.9
-        }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.QWEN_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      }
-    )
-    
-    if (response.data.code) {
-      throw new Error(`通义千问API错误: ${response.data.message}`)
+    // 根据当前轮次获取下一个问题
+    let nextQuestion = null
+    if (currentRound < 3 && presetQuestions.length >= currentRound) {
+      nextQuestion = presetQuestions[currentRound] // 下一轮的问题
+    } else if (currentRound >= 3) {
+      nextQuestion = "很棒！你能总结一下解题思路吗？"
     }
     
-    const aiResponse = response.data.output.choices[0].message.content
-    console.log('AI原始响应:', aiResponse)
+    // 🤖 生成针对性反馈（保持AI分析学生回答的能力）
+    const feedback = await generateFeedbackWithAI(questionText, aiAnalysis, answer, currentRound, dialogue)
     
-    // 解析AI响应
-    let responseData
-    try {
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        responseData = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('AI响应格式不正确')
-      }
-    } catch (parseError) {
-      console.error('解析AI响应失败:', parseError)
-      // 使用默认响应
-      responseData = {
-        feedback: '很好的思考！让我们继续深入探讨这个问题。',
-        nextQuestion: currentRound < 3 ? 
-          '你能再详细说说你的想法吗？' : 
-          '现在你能总结一下解决这道题的完整思路吗？',
+    return {
+      success: true,
+      data: {
+        feedback: feedback,
+        nextQuestion: nextQuestion,
         analysis: {
           understanding_level: 3,
           thinking_quality: 3,
@@ -271,17 +182,72 @@ async function analyzeAnswerWithAI(questionText, aiAnalysis, answer, currentRoun
       }
     }
     
-    return {
-      success: true,
-      data: responseData
-    }
-    
   } catch (error) {
     console.error('AI分析学生回答失败:', error)
     return {
       success: false,
       error: error.message
     }
+  }
+}
+
+/**
+ * 生成针对学生回答的个性化反馈
+ * @param {string} questionText - 原题目
+ * @param {Object} aiAnalysis - AI题目分析
+ * @param {string} answer - 学生回答
+ * @param {number} currentRound - 当前轮次
+ * @param {Array} dialogue - 对话历史
+ * @returns {string} 反馈内容
+ */
+async function generateFeedbackWithAI(questionText, aiAnalysis, answer, currentRound, dialogue) {
+  try {
+    // 构建对话上下文
+    const conversationHistory = dialogue.map(item => ({
+      role: item.type === 'user' ? 'user' : 'assistant',
+      content: item.content
+    }))
+    
+    // 🎯 优化后的提示词 - 专注于反馈生成
+    const systemPrompt = `你是希希老师，专门生成鼓励性反馈。
+
+原题目：${questionText}
+关键关系：${aiAnalysis.keyRelation || '数量关系'}
+当前轮次：${currentRound}/3
+
+请对学生回答给出简短鼓励性反馈（≤30字）：
+1. 肯定正确的部分
+2. 温和指出需要思考的地方
+3. 语言亲切，适合小学生
+
+只返回反馈文字，不要JSON格式。`
+    
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...conversationHistory,
+      { role: 'user', content: answer }
+    ]
+    
+    // 调用AI生成反馈
+    const completion = await openai.chat.completions.create({
+      model: "qwen-plus",
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 100, // 限制长度
+      top_p: 0.9
+    })
+    
+    return completion.choices[0].message.content.trim()
+    
+  } catch (error) {
+    console.error('生成反馈失败:', error)
+    // 返回默认反馈
+    const defaultFeedbacks = [
+      "很好的思考！让我们继续探索。",
+      "你的想法很有意思，再深入想想。",
+      "不错的尝试！我们一起总结一下。"
+    ]
+    return defaultFeedbacks[Math.min(currentRound - 1, 2)]
   }
 }
 
@@ -302,8 +268,59 @@ async function generateLearningReport(sessionData, dialogue) {
     const endTime = new Date(sessionData.endTime || new Date().toISOString())
     const learningTime = Math.round((endTime - startTime) / (1000 * 60)) // 分钟
     
-    // 使用AI生成详细报告
-    const reportPrompt = `请基于以下学习会话数据生成一份详细的学习报告：
+    // 构建报告提示词
+    const reportPrompt = buildReportPrompt(sessionData, userAnswers, aiResponses, learningTime)
+    
+    const completion = await openai.chat.completions.create({
+      model: "qwen-plus",
+      messages: [
+        {
+          role: 'system',
+          content: '你是一位专业的教育评估专家，擅长分析学生的学习表现并生成详细的学习报告。'
+        },
+        {
+          role: 'user',
+          content: reportPrompt
+        }
+      ],
+      temperature: 0.5,
+      max_tokens: 2000,
+      top_p: 0.8
+    })
+    
+    const aiResponse = completion.choices[0].message.content
+    console.log('AI报告生成响应:', aiResponse)
+    
+    // 解析报告数据
+    const reportData = parseReportData(aiResponse, sessionData)
+    
+    // 保存报告到数据库
+    await saveReportToDatabase(sessionData, reportData)
+    
+    return {
+      success: true,
+      data: reportData
+    }
+    
+  } catch (error) {
+    console.error('生成学习报告失败:', error)
+    return {
+      success: false,
+      error: error.message
+    }
+  }
+}
+
+/**
+ * 构建报告生成提示词
+ * @param {Object} sessionData - 会话数据
+ * @param {Array} userAnswers - 用户回答
+ * @param {Array} aiResponses - AI响应
+ * @param {number} learningTime - 学习时长
+ * @returns {string} 提示词
+ */
+function buildReportPrompt(sessionData, userAnswers, aiResponses, learningTime) {
+  return `请基于以下学习会话数据生成一份详细的学习报告：
 
 题目：${sessionData.questionText}
 学习时长：${learningTime}分钟
@@ -338,97 +355,101 @@ ${aiResponses.map((item, index) => `第${index + 1}轮：${item.content}`).join(
   "suggestions": ["学习建议列表"],
   "nextSteps": ["下一步学习计划"]
 }`
-    
-    const response = await axios.post(
-      'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
-      {
-        model: 'qwen-turbo',
-        input: {
-          messages: [
-            {
-              role: 'system',
-              content: '你是一位专业的教育评估专家，擅长分析学生的学习表现并生成详细的学习报告。'
-            },
-            {
-              role: 'user',
-              content: reportPrompt
-            }
-          ]
-        },
-        parameters: {
-          temperature: 0.5,
-          max_tokens: 2000,
-          top_p: 0.8
-        }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.QWEN_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      }
-    )
-    
-    if (response.data.code) {
-      throw new Error(`通义千问API错误: ${response.data.message}`)
+}
+
+/**
+ * 解析AI生成的报告数据
+ * @param {string} aiResponse - AI响应
+ * @param {Object} sessionData - 会话数据
+ * @returns {Object} 解析后的报告数据
+ */
+function parseReportData(aiResponse, sessionData) {
+  let reportData
+  try {
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      reportData = JSON.parse(jsonMatch[0])
+    } else {
+      throw new Error('AI报告响应格式不正确')
     }
-    
-    const aiResponse = response.data.output.choices[0].message.content
-    console.log('AI报告生成响应:', aiResponse)
-    
-    // 解析报告数据
-    let reportData
-    try {
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        reportData = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('AI报告响应格式不正确')
+  } catch (parseError) {
+    console.error('解析AI报告失败:', parseError)
+    // 使用默认报告
+    reportData = createDefaultReport()
+  }
+  
+  // 添加基础信息
+  reportData.questionText = sessionData.questionText
+  reportData.startTime = sessionData.startTime
+  reportData.endTime = sessionData.endTime
+  reportData.completedRounds = sessionData.totalRounds
+  reportData.generateTime = new Date().toISOString()
+  
+  return reportData
+}
+
+/**
+ * 创建默认报告数据
+ * @returns {Object} 默认报告
+ */
+function createDefaultReport() {
+  return {
+    performance: {
+      score: 75,
+      strengths: ['积极思考', '勇于表达'],
+      improvements: ['可以更仔细地分析题目', '尝试多种解题方法']
+    },
+    thinkingAnalysis: {
+      logicalThinking: 3,
+      problemSolving: 3,
+      communication: 3,
+      creativity: 3
+    },
+    knowledgePoints: [
+      {
+        name: '基础数学运算',
+        mastery: 70,
+        description: '对基本运算有一定理解'
       }
-    } catch (parseError) {
-      console.error('解析AI报告失败:', parseError)
-      // 使用默认报告
-      reportData = {
-        performance: {
-          score: 75,
-          strengths: ['积极思考', '勇于表达'],
-          improvements: ['可以更仔细地分析题目', '尝试多种解题方法']
-        },
-        thinkingAnalysis: {
-          logicalThinking: 3,
-          problemSolving: 3,
-          communication: 3,
-          creativity: 3
-        },
-        knowledgePoints: [
-          {
-            name: '基础数学运算',
-            mastery: 70,
-            description: '对基本运算有一定理解'
-          }
-        ],
-        suggestions: [
-          '继续保持学习的积极性',
-          '多练习类似题型',
-          '注意审题的仔细程度'
-        ],
-        nextSteps: [
-          '复习相关基础知识',
-          '练习更多同类型题目',
-          '培养独立思考能力'
-        ]
-      }
-    }
-    
-    // 添加基础信息
-    reportData.questionText = sessionData.questionText
-    reportData.startTime = sessionData.startTime
-    reportData.endTime = sessionData.endTime
-    reportData.completedRounds = sessionData.totalRounds
-    reportData.generateTime = new Date().toISOString()
-    
-    // 保存报告到数据库
+    ],
+    suggestions: [
+      '继续保持学习的积极性',
+      '多练习类似题型',
+      '注意审题的仔细程度'
+    ],
+    nextSteps: [
+      '复习相关基础知识',
+      '练习更多同类型题目',
+      '培养独立思考能力'
+    ]
+  }
+}
+
+/**
+ * 更新会话数据
+ * @param {string} sessionId - 会话文档ID
+ * @param {Object} updateData - 更新数据
+ */
+async function updateSessionData(sessionId, updateData) {
+  try {
+    await db.collection('learning_sessions')
+      .doc(sessionId)
+      .update({
+        data: updateData
+      })
+  } catch (error) {
+    console.error('更新会话数据失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 保存报告到数据库
+ * @param {Object} sessionData - 会话数据
+ * @param {Object} reportData - 报告数据
+ */
+async function saveReportToDatabase(sessionData, reportData) {
+  try {
     await db.collection('learning_reports').add({
       data: {
         sessionId: sessionData.sessionId,
@@ -437,18 +458,9 @@ ${aiResponses.map((item, index) => `第${index + 1}轮：${item.content}`).join(
         timestamp: new Date().toISOString()
       }
     })
-    
-    return {
-      success: true,
-      data: reportData
-    }
-    
   } catch (error) {
-    console.error('生成学习报告失败:', error)
-    return {
-      success: false,
-      error: error.message
-    }
+    console.error('保存报告失败:', error)
+    throw error
   }
 }
 
@@ -472,5 +484,19 @@ async function recordUserBehavior(userId, action, data) {
   } catch (error) {
     console.error('记录用户行为失败:', error)
     // 不影响主流程
+  }
+}
+
+/**
+ * 创建错误响应
+ * @param {string} error - 错误信息
+ * @param {string} code - 错误代码
+ * @returns {Object} 错误响应
+ */
+function createErrorResponse(error, code) {
+  return {
+    success: false,
+    error: error,
+    code: code
   }
 }

@@ -3,6 +3,7 @@
 
 const cloud = require('wx-server-sdk')
 const axios = require('axios')
+const OpenAI = require('openai')
 
 // 初始化云开发
 cloud.init({
@@ -10,6 +11,12 @@ cloud.init({
 })
 
 const db = cloud.database()
+
+// 初始化OpenAI客户端（千问兼容接口）
+const openai = new OpenAI({
+  apiKey: process.env.QWEN_API_KEY,
+  baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+})
 
 /**
  * 云函数入口函数
@@ -266,43 +273,25 @@ ${dialogueAnalysis.aiResponses.map((item, index) =>
   "nextSteps": ["下一步学习计划，要有针对性"]
 }`
     
-    // 调用通义千问API
-    const response = await axios.post(
-      'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
-      {
-        model: 'qwen-turbo',
-        input: {
-          messages: [
-            {
-              role: 'system',
-              content: '你是一位资深的教育评估专家和小学数学教师，具有丰富的学生评估经验。你擅长通过对话分析学生的学习表现，识别学习特点，并提供个性化的教学建议。请基于提供的学习数据生成专业、详细、有针对性的学习评估报告。'
-            },
-            {
-              role: 'user',
-              content: reportPrompt
-            }
-          ]
+    // 调用通义千问API（OpenAI兼容接口）
+    const completion = await openai.chat.completions.create({
+      model: "qwen-plus",
+      messages: [
+        {
+          role: 'system',
+          content: '你是一位资深的教育评估专家和小学数学教师，具有丰富的学生评估经验。你擅长通过对话分析学生的学习表现，识别学习特点，并提供个性化的教学建议。请基于提供的学习数据生成专业、详细、有针对性的学习评估报告。'
         },
-        parameters: {
-          temperature: 0.3, // 降低随机性，提高一致性
-          max_tokens: 2500,
-          top_p: 0.8
+        {
+          role: 'user',
+          content: reportPrompt
         }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.QWEN_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 45000 // 增加超时时间
-      }
-    )
+      ],
+      temperature: 0.3,
+      max_tokens: 2500,
+      top_p: 0.8
+    })
     
-    if (response.data.code) {
-      throw new Error(`通义千问API错误: ${response.data.message}`)
-    }
-    
-    const aiResponse = response.data.output.choices[0].message.content
+    const aiResponse = completion.choices[0].message.content
     console.log('AI报告生成响应:', aiResponse)
     
     // 解析AI响应

@@ -2,7 +2,7 @@
 // 分析题目图片，提取文字并生成AI问题 - 使用微信云OCR
 
 const cloud = require('wx-server-sdk')
-// 移除：const axios = require('axios')
+const OpenAI = require('openai')
 
 // 初始化云开发
 cloud.init({
@@ -14,361 +14,255 @@ const db = cloud.database()
 /**
  * 云函数入口函数
  * @param {Object} event - 事件参数
- * @param {string} event.imageBase64 - 图片base64数据
+ * @param {string} event.imageBase64 - 图片Base64数据
  * @param {string} event.userId - 用户ID
  * @param {string} event.sessionId - 会话ID
- * @param {string} event.timestamp - 时间戳
  */
 exports.main = async (event, context) => {
-  console.log('analyzeQuestion 云函数开始执行', event)
+  const { imageBase64, userId, sessionId } = event;
   
   try {
-    const { imageBase64, userId, sessionId, timestamp } = event
-    
-    // 参数验证
-    if (!imageBase64 || !userId || !sessionId) {
+    // 验证必要参数
+    if (!imageBase64) {
       return {
         success: false,
-        error: '缺少必要参数',
-        code: 'MISSING_PARAMS'
-      }
+        error: '缺少图片数据'
+      };
     }
+
+    console.log('开始分析图片，用户ID:', userId, '会话ID:', sessionId);
     
-    // 1. OCR识别图片文字
-    console.log('开始OCR识别...')
-    const ocrResult = await performOCR(imageBase64)
+    // 直接使用Base64数据调用qwen-vl-max模型
+    const analysisResult = await analyzeWithQwenVLMax(imageBase64);
     
-    if (!ocrResult.success) {
-      return {
-        success: false,
-        error: 'OCR识别失败: ' + ocrResult.error,
-        code: 'OCR_FAILED'
-      }
+    if (!analysisResult.success) {
+      throw new Error(analysisResult.error || '图像分析失败');
     }
-    
-    const questionText = ocrResult.text
-    console.log('OCR识别结果:', questionText)
-    
-    // 2. AI分析题目并生成启发式问题
-    console.log('开始AI分析...')
-    const aiResult = await analyzeWithAI(questionText)
-    
-    if (!aiResult.success) {
-      return {
-        success: false,
-        error: 'AI分析失败: ' + aiResult.error,
-        code: 'AI_ANALYSIS_FAILED'
-      }
-    }
-    
-    // 3. 保存会话数据到数据库
+
+    // 🚀 优化：并行执行数据库操作，不阻塞主流程
     const sessionData = {
       sessionId: sessionId,
       userId: userId,
-      questionText: questionText,
-      questionImage: imageBase64,
-      aiAnalysis: aiResult.data,
-      currentRound: 1,
-      totalRounds: 3,
-      status: 'active',
-      startTime: timestamp,
-      updateTime: timestamp,
-      dialogue: []
-    }
-    
-    console.log('保存会话数据...')
-    await db.collection('learning_sessions').add({
-      data: sessionData
-    })
-    
-    // 4. 记录用户行为
-    await recordUserBehavior(userId, 'question_analyzed', {
-      sessionId: sessionId,
-      questionLength: questionText.length,
-      hasImage: true
-    })
-    
-    console.log('analyzeQuestion 云函数执行成功')
-    
+      questionText: analysisResult.data.questionText,
+      questionImage: 'base64_image',
+      aiAnalysis: analysisResult.data,
+      createdAt: new Date(),
+      status: 'active'
+    };
+
+    // 并行执行数据库操作（不等待完成）
+    Promise.all([
+      saveSessionToDatabase(sessionData),
+      recordUserBehavior({
+        userId: userId,
+        action: 'analyze_question',
+        sessionId: sessionId,
+        timestamp: new Date(),
+        details: {
+          gradeLevel: analysisResult.data.gradeLevel,  // 修复：使用正确的字段名
+          difficulty: analysisResult.data.difficulty
+        }
+      })
+    ]).catch(error => {
+      console.error('后台数据库操作失败:', error);
+      // 不影响主流程，只记录错误
+    });
+
+    // 立即返回结果，不等待数据库操作完成
     return {
       success: true,
       data: {
         sessionId: sessionId,
-        questionText: questionText,
-        aiAnalysis: aiResult.data,
-        firstQuestion: aiResult.data.questions[0] || '请告诉我你对这道题的理解？'
+        ...analysisResult.data
       }
-    }
-    
+    };
+
   } catch (error) {
-    console.error('analyzeQuestion 云函数执行失败:', error)
-    
+    console.error('analyzeQuestion 云函数执行失败:', error);
     return {
       success: false,
-      error: error.message || '服务器内部错误',
-      code: 'INTERNAL_ERROR'
-    }
+      error: error.message || '未知错误'
+    };
   }
-}
+};
 
 /**
- * 执行OCR识别
- * @param {string} imageBase64 - 图片base64数据
- * @returns {Object} OCR结果
+ * 保存会话数据到数据库
+ * @param {Object} sessionData - 会话数据
  */
-/**
- * 执行OCR识别 - 使用微信云OCR API
- * @param {string} imageBase64 - 图片base64数据
- * @returns {Object} OCR结果
- */
-async function performOCR(imageBase64) {
+async function saveSessionToDatabase(sessionData) {
   try {
-    console.log('开始微信OCR识别...')
-    
-    // 使用微信云OCR API进行通用印刷体识别
-    const result = await cloud.openapi.ocr.printedText({
-      img: imageBase64  // 微信OCR支持base64格式
-    })
-    
-    console.log('微信OCR识别结果:', result)
-    
-    // 检查识别结果
-    if (!result.items || result.items.length === 0) {
-      throw new Error('未识别到文字内容')
-    }
-    
-    // 提取识别的文字内容
-    const recognizedText = result.items.map(item => item.text).join('\n')
-    
-    if (!recognizedText.trim()) {
-      throw new Error('识别到的文字内容为空')
-    }
-    
-    return {
-      success: true,
-      text: recognizedText.trim(),
-      confidence: result.items.length, // 使用识别到的文字块数量作为置信度
-      items: result.items // 保留位置信息，可用于后续优化
-    }
-    
+    await db.collection('learning_sessions').add({
+      data: sessionData
+    });
+    console.log('会话数据保存成功');
   } catch (error) {
-    console.error('微信OCR识别失败:', error)
-    
-    // 根据错误类型提供更友好的错误信息
-    let errorMessage = error.message
-    if (error.errCode) {
-      switch (error.errCode) {
-        case 45009:
-          errorMessage = 'API调用次数超限，请稍后重试'
-          break
-        case 47001:
-          errorMessage = '图片格式不支持，请重新拍照'
-          break
-        case 54001:
-          errorMessage = '图片内容不合规'
-          break
-        default:
-          errorMessage = `OCR识别失败: ${error.errMsg || error.message}`
-      }
-    }
-    
-    return {
-      success: false,
-      error: errorMessage
-    }
-  }
-}
-
-/**
- * 获取百度API访问令牌
- * @returns {string} 访问令牌
- */
-// 删除以下函数（第171-196行）
-// async function getBaiduAccessToken() {
-//   try {
-//     const response = await axios.post(
-//       'https://aip.baidubce.com/oauth/2.0/token',
-//       null,
-//       {
-//         params: {
-//           grant_type: 'client_credentials',
-//           client_id: process.env.BAIDU_API_KEY,
-//           client_secret: process.env.BAIDU_SECRET_KEY
-//         },
-//         timeout: 10000
-//       }
-//     )
-//     
-//     if (response.data.error) {
-//       throw new Error(`获取访问令牌失败: ${response.data.error_description}`)
-//     }
-//     
-//     return response.data.access_token
-//     
-//   } catch (error) {
-//     console.error('获取百度访问令牌失败:', error)
-//     throw error
-//   }
-// }
-
-/**
- * 使用AI分析题目
- * @param {string} questionText - 题目文字
- * @returns {Object} AI分析结果
- */
-async function analyzeWithAI(questionText) {
-  try {
-    // 使用通义千问API
-    const response = await axios.post(
-      'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
-      {
-        model: 'qwen-turbo',
-        input: {
-          messages: [
-            {
-              role: 'system',
-              content: `你是一位经验丰富的小学数学老师，擅长使用苏格拉底式教学法。请分析学生提供的数学题目，然后设计3个循序渐进的问题，引导学生独立思考和解决问题。
-
-              要求：
-              1. 不要直接给出答案
-              2. 问题要有层次性，从基础理解到深入分析
-              3. 鼓励学生表达自己的思考过程
-              4. 语言要亲切、鼓励性
-              5. 适合小学生的认知水平
-
-              请以JSON格式返回，包含：
-- subject: 题目涉及的数学主题
-- difficulty: 难度等级(1-5)
-- concepts: 涉及的数学概念数组
-- questions: 3个启发式问题数组
-- hints: 对应的提示数组
-- solution_steps: 解题步骤概要数组`
-            },
-            {
-              role: 'user',
-              content: `请分析这道数学题：\n${questionText}`
-            }
-          ]
-        },
-        parameters: {
-          temperature: 0.7,
-          max_tokens: 1500,
-          top_p: 0.9
-        }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.QWEN_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      }
-    )
-    
-    if (response.data.code) {
-      throw new Error(`通义千问API错误: ${response.data.message}`)
-    }
-    
-    const aiResponse = response.data.output.choices[0].message.content
-    console.log('AI原始响应:', aiResponse)
-    
-    // 解析AI响应
-    let analysisData
-    try {
-      // 尝试解析JSON
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        analysisData = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('AI响应格式不正确')
-      }
-    } catch (parseError) {
-      console.error('解析AI响应失败:', parseError)
-      // 使用默认结构
-      analysisData = {
-        subject: '数学',
-        difficulty: 3,
-        concepts: ['基础运算'],
-        questions: [
-          '你能告诉我这道题在问什么吗？',
-          '你觉得解决这道题需要用到什么数学知识？',
-          '你有什么想法来解决这个问题？'
-        ],
-        hints: [
-          '仔细读题，找出关键信息',
-          '想想你学过的相关数学概念',
-          '试着画图或列式子来帮助思考'
-        ],
-        solution_steps: [
-          '理解题意',
-          '分析数据',
-          '选择方法',
-          '计算求解',
-          '检验答案'
-        ]
-      }
-    }
-    
-    return {
-      success: true,
-      data: analysisData
-    }
-    
-  } catch (error) {
-    console.error('AI分析失败:', error)
-    return {
-      success: false,
-      error: error.message
-    }
+    console.error('保存会话数据失败:', error);
+    throw error;
   }
 }
 
 /**
  * 记录用户行为
- * @param {string} userId - 用户ID
- * @param {string} action - 行为类型
- * @param {Object} data - 行为数据
+ * @param {Object} behaviorData - 行为数据
  */
-async function recordUserBehavior(userId, action, data) {
+async function recordUserBehavior(behaviorData) {
   try {
     await db.collection('user_behaviors').add({
-      data: {
-        userId: userId,
-        action: action,
-        data: data,
-        timestamp: new Date().toISOString(),
-        platform: 'miniprogram'
-      }
-    })
+      data: behaviorData
+    });
   } catch (error) {
-    console.error('记录用户行为失败:', error)
+    console.error('记录用户行为失败:', error);
     // 不影响主流程
   }
 }
 
-// 在analyzeQuestion云函数中替换百度OCR
-// 删除第334-363行的重复代码
-// const cloud = require('wx-server-sdk')
-// cloud.init()
-// async function wechatOCR(imgUrl) {
-//   try {
-//     const result = await cloud.openapi.ocr.printedText({
-//       imgUrl: imgUrl
-//     })
-//     
-//     // 提取识别的文字内容
-//     const recognizedText = result.items.map(item => item.text).join('\n')
-//     
-//     return {
-//       success: true,
-//       text: recognizedText,
-//       items: result.items // 包含位置信息
-//     }
-//   } catch (error) {
-//     console.error('微信OCR识别失败:', error)
-//     return {
-//       success: false,
-//       error: error.message
-//     }
-//   }
-// }
+/**
+ * 构建优化后的智能提示词 - 追问式教学版
+ * @returns {string} 优化后的提示词
+ */
+function buildIntelligentPrompt() {
+  return `【角色】你是希希老师，小学数学追问老师，绝不直接给出答案。
+
+【规则】
+1. 一次只问1个问题，文字≤20字
+2. 学生答错时，降低提示梯度；答对时，提高梯度
+3. 禁止出现"正确答案是…"
+4. 语言亲切温和，适合小学生
+
+【流程】
+1. 追问1：让学生发现"数量关系"
+2. 追问2：提示画图或列式
+3. 追问3：请学生总结答案并检验
+
+【输出JSON格式】
+{
+  "questionText": "题目描述",
+  "gradeLevel": "年级",
+  "difficulty": 1-5,
+  "keyNumbers": ["关键数字"],
+  "keyRelation": "核心数量关系",
+  "questions": [
+    "追问1：引导发现关系(≤20字)",
+    "追问2：提示方法(≤20字)", 
+    "追问3：总结检验(≤20字)"
+  ]
+}
+
+要求：分析图片题目，返回JSON，问题简短有效。`;
+}
+
+/**
+ * 使用通义千问qwen-vl-max进行多模态分析
+ * @param {string} imageBase64 - 图片Base64数据
+ * @returns {Object} 分析结果
+ */
+async function analyzeWithQwenVLMax(imageBase64) {
+  try {
+    // 使用OpenAI兼容接口访问通义千问API
+    const openai = new OpenAI({
+      apiKey: process.env.QWEN_API_KEY,
+      baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    })
+
+    console.log('调用通义千问qwen-vl-max API...');
+    
+    // 构建智能提示词
+    const systemPrompt = buildIntelligentPrompt();
+    
+    const completion = await openai.chat.completions.create({
+      model: "qwen-vl-max",  // 使用qwen-vl-max多模态模型
+      messages: [
+        {
+          role: "system",
+          content: "你是希希老师，一位温和耐心的小学数学老师。请用适合小学生的语言分析题目，并返回JSON格式的教学引导。" + systemPrompt
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "希希老师，请帮我分析这道数学题，用小朋友能理解的方式来引导学习。"
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${imageBase64}`
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 4000,
+      temperature: 0,    // 改为0以获得更确定的输出
+      response_format: { type: "json_object" }  // 强制JSON格式输出
+    });
+    
+    console.log('qwen-vl-max原始响应:', completion.choices[0].message.content);
+    
+    // 解析AI响应
+    let analysisData;
+    try {
+      // 由于设置了response_format为json_object，直接解析JSON
+      analysisData = JSON.parse(completion.choices[0].message.content);
+    } catch (parseError) {
+      console.error('解析AI响应失败:', parseError);
+      // 使用默认结构
+      analysisData = createDefaultAnalysis();
+    }
+    
+    // 验证和增强分析数据
+    const validatedData = validateAndEnhanceAnalysis(analysisData);
+    
+    return {
+      success: true,
+      data: validatedData
+    };
+    
+  } catch (error) {
+    console.error('qwen-vl-max分析失败:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * 简化版数据验证 - 追问式教学版
+ * @param {Object} analysisData - 原始分析数据
+ * @returns {Object} 验证后的分析数据
+ */
+function validateAndEnhanceAnalysis(analysisData) {
+  const defaultData = createDefaultAnalysis();
+  
+  return {
+    questionText: analysisData.questionText || defaultData.questionText,
+    gradeLevel: analysisData.gradeLevel || defaultData.gradeLevel,
+    difficulty: (analysisData.difficulty >= 1 && analysisData.difficulty <= 5) ? analysisData.difficulty : 3,
+    keyNumbers: Array.isArray(analysisData.keyNumbers) ? analysisData.keyNumbers : defaultData.keyNumbers,
+    keyRelation: analysisData.keyRelation || defaultData.keyRelation,
+    questions: Array.isArray(analysisData.questions) && analysisData.questions.length >= 3 
+      ? analysisData.questions.slice(0, 3) 
+      : defaultData.questions
+  };
+}
+
+/**
+ * 创建默认分析结果 - 追问式教学版
+ * @returns {Object} 默认的分析数据结构
+ */
+function createDefaultAnalysis() {
+  return {
+    questionText: "请重新拍照，图片不够清晰哦",
+    gradeLevel: "三年级",
+    difficulty: 3,
+    keyNumbers: ["暂无"],
+    keyRelation: "需要分析数量关系",
+    questions: [
+      "你能找到题目中的数字吗？",
+      "试试画个图帮助思考？",
+      "算出答案了吗？检查一下"
+    ]
+  };
+}
