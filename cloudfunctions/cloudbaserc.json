@@ -7,42 +7,48 @@
       "timeout": 60,
       "envVariables": {},
       "runtime": "Nodejs16.13",
-      "memorySize": 256
+      "memorySize": 256,
+      "handler": "index.main"
     },
     {
-      "name": "handleAnswer", 
+      "name": "handleAnswer",
       "timeout": 60,
       "envVariables": {},
       "runtime": "Nodejs16.13",
-      "memorySize": 256
-    },
-    {
-      "name": "generateReport",
-      "timeout": 60,
-      "envVariables": {},
-      "runtime": "Nodejs16.13",
-      "memorySize": 256
+      "memorySize": 256,
+      "handler": "index.main"
     },
     {
       "name": "getUserHistory",
       "timeout": 30,
       "envVariables": {},
       "runtime": "Nodejs16.13",
-      "memorySize": 128
+      "memorySize": 256,
+      "handler": "index.main"
     },
     {
-      "name": "recordBehavior",
+      "name": "initDatabase",
       "timeout": 30,
       "envVariables": {},
       "runtime": "Nodejs16.13",
-      "memorySize": 128
+      "memorySize": 256,
+      "handler": "index.main"
     },
     {
-      "name": "syncUserData",
+      "name": "reportService",
+      "timeout": 60,
+      "envVariables": {},
+      "runtime": "Nodejs16.13",
+      "memorySize": 256,
+      "handler": "index.main"
+    },
+    {
+      "name": "dataService",
       "timeout": 30,
       "envVariables": {},
       "runtime": "Nodejs16.13",
-      "memorySize": 128
+      "memorySize": 256,
+      "handler": "index.main"
     }
   ]
 }

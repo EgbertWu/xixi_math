@@ -1,0 +1,10 @@
+{
+  "name": "reportService",
+  "version": "1.0.0",
+  "description": "统一的报告服务 - 生成和获取学习报告",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "openai": "^4.20.1"
+  }
+}

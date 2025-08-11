@@ -1,0 +1,9 @@
+{
+  "name": "dataService",
+  "version": "1.0.0",
+  "description": "统一的数据服务 - 合并了 recordBehavior 和 syncUserData 的功能",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
