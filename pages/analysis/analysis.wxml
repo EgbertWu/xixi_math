@@ -1,0 +1,145 @@
+<!-- pages/analysis/analysis.wxml -->
+<!-- 希希数学小助手 详细分析页面 -->
+
+<view class="analysis-container">
+  <!-- 顶部导航 -->
+  <view class="top-nav">
+    <view class="nav-left" bindtap="goBack">
+      <text class="iconfont icon-back"></text>
+      <text>返回</text>
+    </view>
+    <view class="nav-title">{{title}}</view>
+    <view class="nav-right"></view>
+  </view>
+  
+  <!-- 思维能力分析 -->
+  <block wx:if="{{type === 'thinking'}}">
+    <view class="thinking-analysis">
+      <view wx:for="{{content.items}}" wx:key="key" class="thinking-item">
+        <view class="thinking-header">
+          <view class="thinking-title">{{item.name}}</view>
+          <view class="thinking-score">
+            <text class="score-value">{{item.score}}</text>
+            <text class="score-total">/5</text>
+          </view>
+        </view>
+        
+        <view class="star-rating">
+          <block wx:for="{{[1,2,3,4,5]}}" wx:key="*this" wx:for-item="star">
+            <text class="star {{star <= item.score ? 'filled' : ''}}">★</text>
+          </block>
+        </view>
+        
+        <view class="thinking-description">
+          {{item.description}}
+        </view>
+        
+        <view class="thinking-improvements" wx:if="{{item.improvements.length > 0}}">
+          <view class="improvements-title">提升建议</view>
+          <view class="improvements-list">
+            <view wx:for="{{item.improvements}}" wx:key="*this" wx:for-item="improvement" class="improvement-item">
+              <text class="improvement-icon iconfont icon-lightbulb"></text>
+              <text class="improvement-text">{{improvement}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+  
+  <!-- 知识点掌握 -->
+  <block wx:elif="{{type === 'knowledge'}}">
+    <view class="knowledge-analysis">
+      <view wx:for="{{content.points}}" wx:key="name" class="knowledge-item">
+        <view class="knowledge-header">
+          <view class="knowledge-name">{{item.name}}</view>
+          <view class="knowledge-mastery-badge mastery-{{item.levelClass}}">
+            {{item.levelText}}
+          </view>
+        </view>
+        
+        <view class="knowledge-mastery">
+          <view class="mastery-label">掌握程度</view>
+          <view class="mastery-progress">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: {{item.mastery}}%"></view>
+            </view>
+            <text class="mastery-value">{{item.mastery}}%</text>
+          </view>
+        </view>
+        
+        <view class="knowledge-description" wx:if="{{item.description}}">
+          {{item.description}}
+        </view>
+        
+        <view class="knowledge-suggestions">
+          <view class="suggestions-title">学习建议</view>
+          <view class="suggestions-list">
+            <view wx:for="{{item.suggestions}}" wx:key="*this" wx:for-item="suggestion" class="suggestion-item">
+              <text class="suggestion-icon iconfont icon-book"></text>
+              <text class="suggestion-text">{{suggestion}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+  
+  <!-- 学习建议 -->
+  <block wx:elif="{{type === 'suggestions'}}">
+    <view class="suggestions-analysis">
+      <!-- 学习建议 -->
+      <view class="suggestions-section">
+        <view class="section-header">
+          <text class="section-icon iconfont icon-lightbulb"></text>
+          <text class="section-title">学习建议</text>
+        </view>
+        
+        <view class="suggestions-list">
+          <view wx:for="{{content.suggestions}}" wx:key="index" class="suggestion-card">
+            <view class="suggestion-header">
+              <text class="suggestion-icon iconfont icon-lightbulb"></text>
+              <text class="suggestion-number">#{{index + 1}}</text>
+            </view>
+            
+            <view class="suggestion-content">
+              {{item.content}}
+            </view>
+            
+            <view class="suggestion-detail">
+              {{item.detail}}
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 下一步计划 -->
+      <view class="next-steps-section">
+        <view class="section-header">
+          <text class="section-icon iconfont icon-target"></text>
+          <text class="section-title">下一步学习计划</text>
+        </view>
+        
+        <view class="steps-timeline">
+          <view wx:for="{{content.nextSteps}}" wx:key="index" class="step-item">
+            <view class="step-number">{{item.step}}</view>
+            <view class="step-content">
+              <text>{{item.content}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+  
+  <!-- 空状态 -->
+  <view wx:else class="empty-state">
+    <view class="empty-icon iconfont icon-chat"></view>
+    <view class="empty-text">暂无分析数据</view>
+  </view>
+  
+  <!-- 底部信息 -->
+  <view class="footer-info">
+    <text class="footer-text">希希数学小助手 - 个性化学习分析</text>
+  </view>
+</view>

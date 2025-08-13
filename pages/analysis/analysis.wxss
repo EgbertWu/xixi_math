@@ -1,0 +1,450 @@
+/* pages/analysis/analysis.wxss */
+/* 希希数学小助手 详细分析页面样式 */
+
+.analysis-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0 30rpx 40rpx;
+}
+
+/* 顶部导航 */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60rpx 0 20rpx;
+  margin-bottom: 30rpx;
+  color: white;
+}
+
+.nav-left,
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  font-size: 26rpx;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.nav-left:active,
+.nav-right:active {
+  opacity: 0.7;
+  transform: scale(0.95);
+}
+
+.nav-title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+/* 思维能力分析 */
+.thinking-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.thinking-item {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.thinking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.thinking-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.thinking-score {
+  display: flex;
+  align-items: baseline;
+}
+
+.score-value {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.score-total {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 5rpx;
+}
+
+.star-rating {
+  display: flex;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+}
+
+.star {
+  font-size: 36rpx;
+  color: #ddd;
+}
+
+.star.filled {
+  color: #FFD700;
+}
+
+.thinking-description {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.improvements-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.improvements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.improvement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15rpx;
+  padding: 15rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.improvement-icon {
+  font-size: 28rpx;
+}
+
+.improvement-text {
+  flex: 1;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* 知识点掌握 */
+.knowledge-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.knowledge-item {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.knowledge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.knowledge-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.knowledge-mastery-badge {
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: white;
+  font-weight: bold;
+}
+
+.mastery-excellent { background: #4CAF50; }
+.mastery-good { background: #2196F3; }
+.mastery-pass { background: #FF9800; }
+.mastery-improve { background: #F44336; }
+
+.knowledge-mastery {
+  margin-bottom: 20rpx;
+}
+
+.mastery-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.mastery-progress {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 12rpx;
+  background: #e0e0e0;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 6rpx;
+  transition: width 1s ease;
+}
+
+.mastery-value {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.knowledge-description {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.suggestions-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15rpx;
+  padding: 15rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.suggestion-icon {
+  font-size: 28rpx;
+}
+
+.suggestion-text {
+  flex: 1;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* 学习建议 */
+.suggestions-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.suggestions-section,
+.next-steps-section {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  margin-bottom: 25rpx;
+}
+
+.section-icon {
+  font-size: 36rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.suggestion-card {
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+
+.suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  margin-bottom: 15rpx;
+}
+
+.suggestion-icon {
+  font-size: 32rpx;
+}
+
+.suggestion-number {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.suggestion-content {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 15rpx;
+  font-weight: bold;
+}
+
+.suggestion-detail {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* 下一步计划 */
+.steps-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 20rpx;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 5rpx;
+}
+
+.step-number {
+  width: 50rpx;
+  height: 50rpx;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+
+.step-content text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+  color: white;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 30rpx;
+  opacity: 0.8;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  opacity: 0.8;
+}
+
+/* 底部信息 */
+.footer-info {
+  text-align: center;
+  padding: 40rpx 0 20rpx;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footer-text {
+  font-size: 24rpx;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .analysis-container {
+    padding: 0 20rpx 30rpx;
+  }
+  
+  .thinking-item,
+  .knowledge-item,
+  .suggestions-section,
+  .next-steps-section {
+    padding: 20rpx;
+  }
+  
+  .thinking-title,
+  .section-title {
+    font-size: 28rpx;
+  }
+  
+  .thinking-description,
+  .knowledge-description,
+  .suggestion-content,
+  .step-content text {
+    font-size: 26rpx;
+  }
+}

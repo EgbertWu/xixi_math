@@ -1,48 +1,147 @@
 /* 希希数学小助手 统一图标字体样式 */
-
 @font-face {
-  font-family: 'iconfont';
-  src: url('//at.alicdn.com/t/font_xxx.woff2') format('woff2'),
-       url('//at.alicdn.com/t/font_xxx.woff') format('woff'),
-       url('//at.alicdn.com/t/font_xxx.ttf') format('truetype');
+  font-family: 'iconfont';  /* Project id 4993422 */
+  src: 
+       url('//at.alicdn.com/t/c/font_4993422_0ggcx2z6f1ta.woff2?t=1754527421477') format('woff2'),
+       url('//at.alicdn.com/t/c/font_4993422_0ggcx2z6f1ta.woff?t=1754527421477') format('woff'),
+       url('//at.alicdn.com/t/c/font_4993422_0ggcx2z6f1ta.ttf?t=1754527421477') format('truetype');
 }
 
-.iconfont {
-  font-family: "iconfont" !important;
-  font-size: 32rpx;
-  font-style: normal;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* 基础图标类 */
+
+[class^="icon-"],
+[class*=" icon-"] {
+		    /* use !important to prevent issues with browser extensions that change fonts */
+		    font-family: 'iconfont' !important;
+		    font-style: normal;
+		    font-weight: normal;
+        font-variant: normal;
+        font-size: 48rpx; /* 增大默认字体大小 */
+        text-transform: none;
+		    line-height: 1;
+		    /* Better Font Rendering =========== */
+		    -webkit-font-smoothing: antialiased;
+		    -moz-osx-font-smoothing: grayscale;
 }
+
 
 /* 图标映射 - 使用Unicode字符作为备用方案 */
-.icon-camera:before { content: "📷"; }
-.icon-chart:before { content: "📊"; }
-.icon-history:before { content: "📋"; }
-.icon-user:before { content: "👤"; }
-.icon-wechat:before { content: "💬"; }
-.icon-trophy:before { content: "🏆"; }
-.icon-menu:before { content: "☰"; }
-.icon-arrow-right:before { content: "→"; }
-.icon-back:before { content: "←"; }
-.icon-help:before { content: "❓"; }
-.icon-share:before { content: "📤"; }
-.icon-settings:before { content: "⚙️"; }
-.icon-star:before { content: "⭐"; }
-.icon-check:before { content: "✅"; }
-.icon-close:before { content: "❌"; }
-.icon-add:before { content: "➕"; }
-.icon-minus:before { content: "➖"; }
-.icon-multiply:before { content: "✖️"; }
-.icon-divide:before { content: "➗"; }
-.icon-lightbulb:before { content: "💡"; }
-.icon-send:before { content: "📤"; }
-.icon-image:before { content: "🖼️"; }
-.icon-zoom:before { content: "🔍"; }
-.icon-flash-on:before { content: "⚡"; }
-.icon-flash-off:before { content: "🔦"; }
-.icon-switch:before { content: "🔄"; }
-.icon-album:before { content: "📱"; }
+.icon-save:before {
+  content: "\edcd";
+}
+
+.icon-wenhao:before {
+  content: "\e647";
+}
+
+.icon-dianzan:before {
+  content: "\1007e";
+}
+
+.icon-book:before {
+  content: "\e6e4";
+}
+
+.icon-target:before {
+  content: "\e661";
+}
+
+.icon-brain:before {
+  content: "\e611";
+}
+
+.icon-camera:before {
+  content: "\e66d";
+}
+
+.icon-flash_off:before {
+  content: "\e897";
+}
+
+.icon-back:before {
+  content: "\e612";
+}
+
+.icon-flash_on:before {
+  content: "\e6e8";
+}
+
+.icon-trophy:before {
+  content: "\e6d0";
+}
+
+.icon-star:before {
+  content: "\edf9";
+}
+
+.icon-menu:before {
+  content: "\e67a";
+}
+
+.icon-arrow-right:before {
+  content: "\e636";
+}
+
+.icon-chat:before {
+  content: "\e60b";
+}
+
+.icon-wrong:before {
+  content: "\ea17";
+}
+
+.icon-check:before {
+  content: "\e64f";
+}
+
+.icon-history:before {
+  content: "\e720";
+}
+
+.icon-share:before {
+  content: "\e8f1";
+}
+
+.icon-setting:before {
+  content: "\e6a4";
+}
+
+.icon-close:before {
+  content: "\e61c";
+}
+
+.icon-chart:before {
+  content: "\e74e";
+}
+
+.icon-loading:before {
+  content: "\e602";
+}
+
+.icon-study:before {
+  content: "\e99e";
+}
+
+.icon-a-heiban:before {
+  content: "\e99f";
+}
+
+.icon-a-chengji:before {
+  content: "\e9a0";
+}
+
+.icon-lightbulb:before {
+  content: "\e9a1";
+}
+
+.icon-correct:before {
+  content: "\edfa";
+}
+
+.icon-fasong:before {
+  content: "\e7a1";
+}
+
 
 /* 图标颜色变体 */
 .icon-primary {
@@ -80,4 +179,15 @@
 
 .icon-xlarge {
   font-size: 64rpx;
+}
+
+
+/* 动画效果 */
+.icon-loading {
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

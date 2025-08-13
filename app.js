@@ -13,7 +13,7 @@ App({
       console.error('请使用 2.2.3 或以上的基础库以使用云能力')
     } else {
       wx.cloud.init({
-        env: 'tutor-ai-mvp', // 云开发环境ID，需要替换为实际的环境ID
+        env: 'cloud1-8g4cl3p21c582f6e', // 云开发环境ID
         traceUser: true, // 是否在将用户访问记录到用户管理中
       })
     }
@@ -53,6 +53,12 @@ App({
     }
     this.globalData.userId = userId
 
+    // 尝试恢复用户信息
+    const userInfo = wx.getStorageSync('userInfo')
+    if (userInfo) {
+      this.globalData.userInfo = userInfo
+    }
+
     // 记录用户启动时间
     const launchTime = new Date().toISOString()
     wx.setStorageSync('lastLaunchTime', launchTime)
@@ -79,25 +85,43 @@ App({
    * @param {object} data - 行为数据
    */
   trackUserBehavior(action, data = {}) {
-    const behaviorData = {
-      userId: this.globalData.userId,
-      action: action,
-      data: data,
-      timestamp: new Date().toISOString(),
-      page: getCurrentPages().pop()?.route || 'unknown'
-    }
-
-    // 调用云函数记录行为数据
-    wx.cloud.callFunction({
-      name: 'trackBehavior',
-      data: behaviorData,
-      success: (res) => {
-        console.log('行为数据记录成功', res)
-      },
-      fail: (err) => {
-        console.error('行为数据记录失败', err)
+    try {
+      // 先保存到本地，确保即使云函数调用失败也有记录
+      const localBehaviors = wx.getStorageSync('userBehaviors') || []
+      const behaviorData = {
+        userId: this.globalData.userId,
+        action: action,
+        data: data,
+        timestamp: new Date().toISOString(),
+        page: getCurrentPages().pop()?.route || 'unknown'
       }
-    })
+      
+      localBehaviors.push(behaviorData)
+      wx.setStorageSync('userBehaviors', localBehaviors.slice(-100)) // 只保留最近100条
+      
+      // 如果用户未登录或userId为临时ID，则不调用云函数
+      if (!this.globalData.userInfo || !this.globalData.userId || this.globalData.userId.startsWith('temp_')) {
+        console.log('用户未登录，行为数据仅保存到本地')
+        return
+      }
+      
+      // 调用云函数记录行为数据
+      wx.cloud.callFunction({
+        name: 'dataService',  // ✅ 更新：使用新的合并云函数
+        data: {
+          action: 'recordBehavior',  // ✅ 新增：指定操作类型
+          data: behaviorData
+        },
+        success: (res) => {
+          console.log('行为数据记录成功', res)
+        },
+        fail: (err) => {
+          console.error('行为数据记录失败', err)
+        }
+      })
+    } catch (error) {
+      console.error('记录用户行为出错', error)
+    }
   },
 
   /**

@@ -1,41 +1,19 @@
 // pages/index/index.js
 // 希希数学小助手 首页逻辑
 
+const app = getApp()
+
 Page({
   /**
    * 页面的初始数据
    */
   data: {
-    // 统计数据
     stats: {
-      totalQuestions: 123,
-      learningTime: '4h 30m',
-      accuracy: '95%'
+      totalQuestions: 0,
+      learningTime: '0h 0m',
+      accuracy: '0%'
     },
-    
-    // 解题历史记录（示例数据）
-    historyItems: [
-      {
-        id: 1,
-        title: '加法运算',
-        image: '/images/math-addition.png'
-      },
-      {
-        id: 2,
-        title: '减法运算', 
-        image: '/images/math-subtraction.png'
-      },
-      {
-        id: 3,
-        title: '乘法运算',
-        image: '/images/math-multiplication.png'
-      },
-      {
-        id: 4,
-        title: '除法运算',
-        image: '/images/math-division.png'
-      }
-    ]
+    historyItems: []
   },
 
   /**
@@ -43,14 +21,83 @@ Page({
    */
   onLoad(options) {
     console.log('希希数学小助手首页加载');
-    this.loadUserStats();
+    this.initPageData();
   },
 
   /**
-   * 加载用户统计数据
+   * 初始化页面数据
    */
-  loadUserStats() {
-    // 从本地存储获取用户统计数据
+  initPageData() {
+    // 先设置默认数据，确保页面能快速显示
+    this.setDefaultData();
+    
+    // 如果用户已登录，再异步加载云端数据
+    if (app.globalData.userInfo) {
+      this.loadUserStats();
+    } else {
+      // 未登录用户使用本地数据
+      this.loadLocalStats();
+    }
+  },
+
+  /**
+   * 设置默认数据
+   */
+  setDefaultData() {
+    this.setData({
+      stats: {
+        totalQuestions: 0,
+        learningTime: '0h 0m',
+        accuracy: '0%'
+      },
+      historyItems: []
+    });
+  },
+
+  /**
+   * 加载用户统计数据（仅登录用户）
+   */
+  async loadUserStats() {
+    // 只有登录用户才访问数据库
+    if (!app.globalData.userInfo) {
+      this.loadLocalStats();
+      return;
+    }
+
+    try {
+      // 从云数据库获取用户统计数据
+      const db = wx.cloud.database();
+      const userStatsResult = await db.collection('user_stats').where({
+        _openid: '{openid}'
+      }).get();
+      
+      let userStats = {
+        totalQuestions: 0,
+        learningTime: '0h 0m',
+        accuracy: '0%'
+      };
+      
+      if (userStatsResult.data.length > 0) {
+        userStats = userStatsResult.data[0];
+      }
+      
+      this.setData({
+        stats: userStats
+      });
+      
+      // 加载解题历史记录
+      await this.loadLearningHistory();
+    } catch (error) {
+      console.error('加载用户统计数据失败:', error);
+      // 降级到本地存储
+      this.loadLocalStats();
+    }
+  },
+
+  /**
+   * 加载本地统计数据（降级方案）
+   */
+  loadLocalStats() {
     const userStats = wx.getStorageSync('userStats') || {
       totalQuestions: 0,
       learningTime: '0h 0m',
@@ -61,17 +108,54 @@ Page({
       stats: userStats
     });
     
-    // 加载解题历史记录
     this.loadLearningHistory();
   },
 
   /**
-   * 加载学习历史记录
+   * 加载学习历史记录（仅登录用户）
    */
-  loadLearningHistory() {
+  async loadLearningHistory() {
+    // 只有登录用户才访问数据库
+    if (!app.globalData.userInfo) {
+      this.loadLocalHistory();
+      return;
+    }
+    
+    try {
+      // 从云数据库获取学习历史
+      const db = wx.cloud.database();
+      const historyResult = await db.collection('learning_sessions')
+        .where({
+          _openid: '{openid}'
+        })
+        .orderBy('updateTime', 'desc')
+        .limit(4)
+        .get();
+      
+      const recentHistory = historyResult.data.map(item => ({
+        id: item._id,
+        title: item.questionText || '数学题解答',
+        image: item.questionImage || '',
+        timestamp: item.updateTime,
+        sessionId: item.sessionId
+      }));
+      
+      this.setData({
+        historyItems: recentHistory
+      });
+    } catch (error) {
+      console.error('加载学习历史失败:', error);
+      // 降级到本地存储
+      this.loadLocalHistory();
+    }
+  },
+
+  /**
+   * 加载本地历史记录（降级方案）
+   */
+  loadLocalHistory() {
     const historyList = wx.getStorageSync('learningHistory') || [];
     
-    // 只显示最近的4条记录
     const recentHistory = historyList.slice(0, 4).map(item => ({
       id: item.sessionId,
       title: item.summary || '数学题解答',
@@ -89,6 +173,25 @@ Page({
    * 开始拍照解题
    */
   startCamera() {
+    // 检查用户是否登录
+    if (!app.globalData.userInfo) {
+      wx.showModal({
+        title: '需要登录',
+        content: '请先登录以便保存您的学习记录',
+        confirmText: '去登录',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            // 跳转到个人资料页面进行登录
+            wx.switchTab({
+              url: '/pages/profile/profile'
+            })
+          }
+        }
+      })
+      return
+    }
+    
     wx.navigateTo({
       url: '/pages/camera/camera'
     });
@@ -98,6 +201,25 @@ Page({
    * 跳转到相机页面
    */
   goToCamera() {
+    // 检查用户是否登录
+    if (!app.globalData.userInfo) {
+      wx.showModal({
+        title: '需要登录',
+        content: '请先登录以便保存您的学习记录',
+        confirmText: '去登录',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            // 跳转到个人资料页面进行登录
+            wx.switchTab({
+              url: '/pages/profile/profile'
+            })
+          }
+        }
+      })
+      return
+    }
+    
     wx.navigateTo({
       url: '/pages/camera/camera'
     });
@@ -125,10 +247,74 @@ Page({
   },
 
   /**
+   * 更新用户统计数据到云数据库
+   */
+  async updateUserStats(newStats) {
+    try {
+      const db = wx.cloud.database();
+      const userStatsResult = await db.collection('user_stats').where({
+        _openid: '{openid}'
+      }).get();
+      
+      if (userStatsResult.data.length > 0) {
+        // 更新现有记录
+        await db.collection('user_stats').doc(userStatsResult.data[0]._id).update({
+          data: newStats
+        });
+      } else {
+        // 创建新记录
+        await db.collection('user_stats').add({
+          data: {
+            ...newStats,
+            createTime: new Date()
+          }
+        });
+      }
+      
+      // 同时更新本地存储作为备份
+      wx.setStorageSync('userStats', newStats);
+    } catch (error) {
+      console.error('更新用户统计数据失败:', error);
+      // 降级到本地存储
+      wx.setStorageSync('userStats', newStats);
+    }
+  },
+
+  /**
+   * 保存学习记录到云数据库
+   */
+  async saveLearningRecord(record) {
+    try {
+      const db = wx.cloud.database();
+      await db.collection('learning_sessions').add({
+        data: {
+          ...record,
+          timestamp: new Date()
+        }
+      });
+      
+      // 同时保存到本地存储作为备份
+      const localHistory = wx.getStorageSync('learningHistory') || [];
+      localHistory.unshift(record);
+      wx.setStorageSync('learningHistory', localHistory.slice(0, 50)); // 只保留最近50条
+      
+      // 刷新历史记录显示
+      this.loadLearningHistory();
+    } catch (error) {
+      console.error('保存学习记录失败:', error);
+      // 降级到本地存储
+      const localHistory = wx.getStorageSync('learningHistory') || [];
+      localHistory.unshift(record);
+      wx.setStorageSync('learningHistory', localHistory.slice(0, 50));
+      this.loadLocalHistory();
+    }
+  },
+
+  /**
    * 生命周期函数--监听页面显示
    */
   onShow() {
-    // 页面显示时刷新数据
-    this.loadUserStats();
+    // 页面显示时刷新数据，但不直接访问数据库
+    this.initPageData();
   }
 });

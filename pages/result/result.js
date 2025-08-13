@@ -62,14 +62,37 @@ Page({
   onLoad(options) {
     console.log('结果页面加载', options)
     
+    const mode = options.mode
     const sessionId = options.sessionId
+    
+    // 如果是历史模式
+    if (mode === 'history') {
+      this.setData({ 
+        mode: 'history',
+        isLoading: true,
+        loadingText: '正在加载学习历史...'
+      })
+      this.loadLearningHistory()
+      
+      // 记录页面访问
+      app.trackUserBehavior('page_visit', {
+        page: 'result',
+        mode: 'history'
+      })
+      return
+    }
+    
+    // 正常的报告模式
     if (!sessionId) {
       app.showError('会话ID缺失')
       wx.navigateBack()
       return
     }
     
-    this.setData({ sessionId })
+    this.setData({ 
+      sessionId,
+      mode: 'report'
+    })
     
     // 加载学习报告
     this.loadLearningReport()
@@ -87,18 +110,21 @@ Page({
    */
   loadLearningReport() {
     wx.cloud.callFunction({
-      name: 'generateReport',
+      name: 'reportService',  // ✅ 调用 reportService 云函数
       data: {
-        sessionId: this.data.sessionId,
-        userId: app.globalData.userId,
-        timestamp: new Date().toISOString()
+        action: 'generate',   // ✅ 指定生成报告操作
+        data: {
+          sessionId: this.data.sessionId,
+          userId: app.globalData.userId,
+          timestamp: new Date().toISOString()
+        }
       },
       success: (res) => {
         console.log('学习报告生成成功', res)
         
         if (res.result && res.result.success) {
           const reportData = res.result.data
-          this.processReportData(reportData)
+          this.processReportData(reportData)  // ✅ 处理报告数据
         } else {
           this.handleLoadError(res.result?.error || '报告生成失败')
         }
@@ -120,15 +146,15 @@ Page({
     const endTime = new Date(reportData.endTime)
     const totalTime = Math.round((endTime - startTime) / (1000 * 60)) // 转换为分钟
     
-    // 处理性能等级
-    const getScoreLevel = (score) => {
+    // 获取性能等级
+    const getPerformanceLevel = (score) => {
       if (score >= 85) return 'excellent'  // 优秀
       if (score >= 70) return 'good'       // 良好
       if (score >= 60) return 'pass'       // 及格
       return 'improve'                     // 需要改进
     }
     
-    const getScoreLevelText = (score) => {
+    const getPerformanceLevelText = (score) => {
       if (score >= 85) return '优秀'
       if (score >= 70) return '良好'
       if (score >= 60) return '及格'
@@ -137,8 +163,8 @@ Page({
     
     // 更新数据
     this.setData({
-      'reportData.performance.level': getScoreLevel(reportData.performance.score),
-      'reportData.performance.levelText': getScoreLevelText(reportData.performance.score),
+      'reportData.performance.level': getPerformanceLevel(reportData.performance.score),
+      'reportData.performance.levelText': getPerformanceLevelText(reportData.performance.score),
       reportData: {
         ...this.data.reportData,
         questionText: reportData.questionText,
@@ -246,42 +272,39 @@ Page({
   },
 
   /**
-   * 查看详细分析
+   * 点击历史记录项
    * @param {Object} e - 事件对象
    */
-  viewDetailAnalysis(e) {
-    const type = e.currentTarget.dataset.type
+  onHistoryItemTap(e) {
+    const item = e.currentTarget.dataset.item
+    const sessionId = item.sessionId
+    const isCompleted = item.isCompleted
     
-    let title = ''
-    let content = ''
-    
-    switch (type) {
-      case 'thinking':
-        title = '思维能力分析'
-        content = this.generateThinkingAnalysisText()
-        break
-      case 'knowledge':
-        title = '知识点掌握情况'
-        content = this.generateKnowledgeAnalysisText()
-        break
-      case 'suggestions':
-        title = '学习建议'
-        content = this.data.reportData.suggestions.join('\n\n')
-        break
-      default:
-        return
+    if (!isCompleted) {
+      wx.showModal({
+        title: '未完成的学习',
+        content: '这是一个未完成的学习记录，是否继续学习？',
+        confirmText: '继续学习',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            // 继续学习
+            wx.navigateTo({
+              url: `/pages/learning/learning?sessionId=${sessionId}&resume=true`
+            })
+          }
+        }
+      })
+    } else {
+      // 查看完成的学习报告
+      wx.navigateTo({
+        url: `/pages/result/result?sessionId=${sessionId}`
+      })
     }
     
-    wx.showModal({
-      title: title,
-      content: content,
-      showCancel: false,
-      confirmText: '我知道了'
-    })
-    
-    app.trackUserBehavior('view_detail_analysis', {
-      sessionId: this.data.sessionId,
-      type: type
+    app.trackUserBehavior('history_item_tap', {
+      sessionId: sessionId,
+      isCompleted: isCompleted
     })
   },
 
@@ -322,27 +345,231 @@ Page({
   /**
    * 继续学习新题目
    */
-  continueNewLearning() {
-    app.trackUserBehavior('continue_new_learning', {
-      sessionId: this.data.sessionId
-    })
-    
-    wx.navigateTo({
-      url: '/pages/camera/camera'
+  continueLearning() {
+    wx.showModal({
+      title: '继续学习',
+      content: '是否拍摄新题目继续学习？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.navigateTo({
+            url: '/pages/camera/camera'
+          })
+        }
+      }
     })
   },
 
   /**
-   * 查看学习历史
+   * 加载学习历史记录
+   */
+  loadLearningHistory() {
+    // 检查用户是否登录
+    if (!app.globalData.userId) {
+      // 显示默认空状态或本地数据
+      this.setData({
+        historyList: [],
+        historyStats: {
+          completedCount: 0,
+          avgScore: 0
+        },
+        isLoading: false
+      });
+      return;
+    }
+    
+    wx.cloud.callFunction({
+      name: 'getUserHistory',
+      data: {
+        userId: app.globalData.userId,
+        limit: 20 // 限制返回20条记录
+      },
+      success: (res) => {
+        console.log('学习历史加载成功', res)
+        
+        if (res.result && res.result.success) {
+          const historyData = res.result.data
+          this.processHistoryData(historyData)
+        } else {
+          this.handleHistoryLoadError(res.result?.error || '历史记录加载失败')
+        }
+      },
+      fail: (err) => {
+        console.error('加载学习历史失败', err)
+        this.handleHistoryLoadError('网络错误，请重试')
+      }
+    })
+  },
+
+  /**
+   * 处理历史数据
+   * @param {Object} historyData - 历史数据
+   */
+  processHistoryData(historyData) {
+    const sessions = historyData.sessions || []
+    
+    // 处理每个会话的显示数据
+    const historyList = sessions.map(session => {
+      const createTime = new Date(session.createTime || session.startTime)
+      const now = new Date()
+      const diffTime = now - createTime
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+      
+      let timeText
+      if (diffDays === 0) {
+        timeText = '今天'
+      } else if (diffDays === 1) {
+        timeText = '昨天'
+      } else if (diffDays < 7) {
+        timeText = `${diffDays}天前`
+      } else {
+        timeText = createTime.toLocaleDateString('zh-CN')
+      }
+      
+      const startTime = new Date(session.startTime)
+      const endTime = new Date(session.endTime || session.updateTime)
+      const duration = Math.round((endTime - startTime) / (1000 * 60)) // 分钟
+      
+      // 生成题目预览文本
+      const questionPreview = session.questionText ? 
+        (session.questionText.length > 30 ? 
+          session.questionText.substring(0, 30) + '...' : 
+          session.questionText) : 
+        '数学题目'
+      
+      // 状态处理
+      let statusText = ''
+      let status = session.status
+      if (session.status === 'completed') {
+        statusText = '已完成'
+        status = 'completed'
+      } else if (session.status === 'in_progress') {
+        statusText = '进行中'
+        status = 'progress'
+      } else {
+        statusText = '未完成'
+        status = 'incomplete'
+      }
+      
+      return {
+        id: session._id || session.sessionId,
+        sessionId: session.sessionId,
+        questionPreview: questionPreview,
+        timeText: timeText,
+        duration: duration,
+        status: status,
+        statusText: statusText,
+        score: session.finalScore || null,
+        isCompleted: session.status === 'completed'
+      }
+    })
+    
+    // 计算统计数据
+    const completedSessions = sessions.filter(s => s.status === 'completed')
+    const totalTime = sessions.reduce((sum, session) => {
+      const start = new Date(session.startTime)
+      const end = new Date(session.endTime || session.updateTime)
+      return sum + Math.round((end - start) / (1000 * 60))
+    }, 0)
+    
+    const averageScore = completedSessions.length > 0 ? 
+      Math.round(completedSessions.reduce((sum, s) => sum + (s.finalScore || 0), 0) / completedSessions.length) : 0
+    
+    this.setData({
+      historyList: historyList,
+      historyStats: {
+        completedCount: completedSessions.length,
+        avgScore: averageScore
+      },
+      isLoading: false
+    })
+  },
+
+  /**
+   * 处理历史加载错误
+   * @param {string} errorMsg - 错误信息
+   */
+  handleHistoryLoadError(errorMsg) {
+    this.setData({
+      isLoading: false
+    })
+    
+    wx.showModal({
+      title: '加载失败',
+      content: errorMsg + '\n\n是否重试？',
+      confirmText: '重试',
+      cancelText: '返回',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({ isLoading: true })
+          this.loadLearningHistory()
+        } else {
+          wx.navigateBack()
+        }
+      }
+    })
+  },
+
+  /**
+   * 点击历史记录项
+   * @param {Object} e - 事件对象
+   */
+  onHistoryItemTap(e) {
+    const sessionId = e.currentTarget.dataset.sessionId
+    const isCompleted = e.currentTarget.dataset.completed
+    
+    if (!isCompleted) {
+      wx.showModal({
+        title: '未完成的学习',
+        content: '这是一个未完成的学习记录，是否继续学习？',
+        confirmText: '继续学习',
+        cancelText: '查看详情',
+        success: (res) => {
+          if (res.confirm) {
+            // 继续学习
+            wx.navigateTo({
+              url: `/pages/learning/learning?sessionId=${sessionId}&resume=true`
+            })
+          } else {
+            // 查看详情
+            this.viewSessionDetail(sessionId)
+          }
+        }
+      })
+    } else {
+      // 查看完成的学习报告
+      wx.navigateTo({
+        url: `/pages/result/result?sessionId=${sessionId}`
+      })
+    }
+    
+    app.trackUserBehavior('history_item_tap', {
+      sessionId: sessionId,
+      isCompleted: isCompleted
+    })
+  },
+
+  /**
+   * 查看会话详情
+   * @param {string} sessionId - 会话ID
+   */
+  viewSessionDetail(sessionId) {
+    // 这里可以显示会话的详细信息
+    wx.showToast({
+      title: '功能开发中',
+      icon: 'none'
+    })
+  },
+
+  /**
+   * 查看学习历史（从报告页面跳转）
    */
   viewLearningHistory() {
     app.trackUserBehavior('view_learning_history', {
       sessionId: this.data.sessionId
     })
     
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/result/result?mode=history'
     })
   },
 

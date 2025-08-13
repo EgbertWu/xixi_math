@@ -115,7 +115,7 @@
       <view class="menu-list">
         <view wx:for="{{menuItems}}" wx:key="id" class="menu-item" bindtap="onMenuItemTap" data-id="{{item.id}}">
           <view class="menu-icon">
-            <text class="iconfont {{item.icon}}"></text>
+            <text class="iconfont {{item.icon}} black"></text>
             <view wx:if="{{item.badge}}" class="menu-badge">{{item.badge}}</view>
           </view>
           

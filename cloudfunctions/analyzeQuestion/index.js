@@ -46,6 +46,7 @@ exports.main = async (event, context) => {
       questionText: analysisResult.data.questionText,
       questionImage: 'base64_image',
       aiAnalysis: analysisResult.data,
+      dialogue: [],
       createdAt: new Date(),
       status: 'active'
     };
@@ -129,11 +130,10 @@ function buildIntelligentPrompt() {
 2. 学生答错时，降低提示梯度；答对时，提高梯度
 3. 禁止出现"正确答案是…"
 4. 语言亲切温和，适合小学生
+5. 语言需要通俗易懂，适合小学生理解
 
 【流程】
-1. 追问1：让学生发现"数量关系"
-2. 追问2：提示画图或列式
-3. 追问3：请学生总结答案并检验
+1. 追问1：引导学生发现题目中的数量关系
 
 【输出JSON格式】
 {
@@ -143,13 +143,31 @@ function buildIntelligentPrompt() {
   "keyNumbers": ["关键数字"],
   "keyRelation": "核心数量关系",
   "questions": [
-    "追问1：引导发现关系(≤20字)",
-    "追问2：提示方法(≤20字)", 
-    "追问3：总结检验(≤20字)"
+    "追问1：(≤20字)"
   ]
 }
 
-要求：分析图片题目，返回JSON，问题简短有效。`;
+要求：分析图片题目，返回JSON，问题简短有效。
+【任务说明】
+- 先分析输入的数学应用题，提炼题干信息和关键数字。
+- 按照苏格拉底式提问原则，生成三个循序渐进的问题。
+- 生成的 JSON 必须满足字段完整、格式正确、内容科学合理。
+- 问题语言简洁有趣，鼓励学生思考。
+
+【输入示例】
+某商店一周售出60套运动服，一共收入多少钱？（上衣75元，裤子45元）
+
+【输出示例】
+{
+  "questionText": "某商店一周售出60套运动服，一共收入多少钱？（上衣75元，裤子45元）",
+  "gradeLevel": "四年级",
+  "difficulty": 2,
+  "keyNumbers": ["60", "75", "45"],
+  "keyRelation": "一套运动服=上衣+裤子，总价=单价×数量",
+  "questions": [
+    "一套运动服多少钱？"
+  ]
+}`;
 }
 
 /**
@@ -171,7 +189,7 @@ async function analyzeWithQwenVLMax(imageBase64) {
     const systemPrompt = buildIntelligentPrompt();
     
     const completion = await openai.chat.completions.create({
-      model: "qwen-vl-max",  // 使用qwen-vl-max多模态模型
+      model: "qwen-vl-plus-2025-05-07",  // 使用qwen-vl-max多模态模型
       messages: [
         {
           role: "system",
@@ -194,7 +212,7 @@ async function analyzeWithQwenVLMax(imageBase64) {
         }
       ],
       max_tokens: 4000,
-      temperature: 0,    // 改为0以获得更确定的输出
+      temperature: 0.7,
       response_format: { type: "json_object" }  // 强制JSON格式输出
     });
     
@@ -242,9 +260,8 @@ function validateAndEnhanceAnalysis(analysisData) {
     difficulty: (analysisData.difficulty >= 1 && analysisData.difficulty <= 5) ? analysisData.difficulty : 3,
     keyNumbers: Array.isArray(analysisData.keyNumbers) ? analysisData.keyNumbers : defaultData.keyNumbers,
     keyRelation: analysisData.keyRelation || defaultData.keyRelation,
-    questions: Array.isArray(analysisData.questions) && analysisData.questions.length >= 3 
-      ? analysisData.questions.slice(0, 3) 
-      : defaultData.questions
+    questions: Array.isArray(analysisData.questions) ? analysisData.questions : 
+               (analysisData.questions ? [analysisData.questions] : defaultData.questions)
   };
 }
 
@@ -260,9 +277,7 @@ function createDefaultAnalysis() {
     keyNumbers: ["暂无"],
     keyRelation: "需要分析数量关系",
     questions: [
-      "你能找到题目中的数字吗？",
-      "试试画个图帮助思考？",
-      "算出答案了吗？检查一下"
+      "你能找到题目中的数字吗？"
     ]
   };
 }

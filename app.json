@@ -4,7 +4,8 @@
     "pages/camera/camera",
     "pages/learning/learning",
     "pages/result/result",
-    "pages/profile/profile"
+    "pages/profile/profile",
+    "pages/analysis/analysis"
   ],
   "window": {
     "backgroundTextStyle": "light",

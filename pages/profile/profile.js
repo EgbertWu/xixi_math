@@ -85,36 +85,36 @@ Page({
     menuItems: [
       {
         id: 'learning_history',
-        name: '学习历史',
+        name: '学习报告',
         icon: 'icon-history',
-        desc: '查看学习记录',
+        desc: 'AI智能分析学习成长轨迹',
         badge: ''
       },
       {
         id: 'achievements',
         name: '成就中心',
-        icon: 'icon-trophy',
+        icon: 'icon-a-chengji',
         desc: '查看获得的成就',
         badge: ''
       },
       {
         id: 'settings',
         name: '设置',
-        icon: 'icon-settings',
+        icon: 'icon-setting',
         desc: '应用设置',
         badge: ''
       },
       {
         id: 'feedback',
         name: '意见反馈',
-        icon: 'icon-feedback',
+        icon: 'icon-wenhao',
         desc: '帮助我们改进',
         badge: ''
       },
       {
         id: 'about',
         name: '关于我们',
-        icon: 'icon-info',
+        icon: 'icon-brain',
         desc: '希希数学小助手介绍',
         badge: ''
       }
@@ -191,8 +191,14 @@ Page({
    * 从云端同步用户数据
    */
   syncUserDataFromCloud() {
+    // 检查用户是否登录
+    if (!app.globalData.userId) {
+      this.setData({ isLoading: false });
+      return;
+    }
+    
     wx.cloud.callFunction({
-      name: 'getUserProfile',
+      name: 'getUserHistory',
       data: {
         userId: app.globalData.userId
       },
@@ -325,11 +331,14 @@ Page({
    */
   syncUserInfoToCloud(userInfo) {
     wx.cloud.callFunction({
-      name: 'updateUserInfo',
+      name: 'dataService',  // ✅ 更新：使用新的合并云函数
       data: {
-        userId: app.globalData.userId,
-        userInfo: userInfo,
-        timestamp: new Date().toISOString()
+        action: 'syncUserData',  // ✅ 新增：指定操作类型
+        data: {
+          userId: app.globalData.userId,
+          userInfo: userInfo,
+          timestamp: new Date().toISOString()
+        }
       },
       success: (res) => {
         console.log('用户信息同步成功', res)
@@ -379,9 +388,40 @@ Page({
    * 查看学习历史
    */
   viewLearningHistory() {
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
+    // 记录行为
+    app.trackUserBehavior('view_learning_history', {
+      from: 'profile'
+    })
+    
+    // 检查用户是否登录
+    if (!this.data.isLogin) {
+      wx.showModal({
+        title: '需要登录',
+        content: '查看学习报告需要先登录账号',
+        confirmText: '立即登录',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            this.handleLogin()
+          }
+        }
+      })
+      return
+    }
+    
+    // 跳转到结果页面显示历史记录
+    wx.navigateTo({
+      url: '/pages/result/result?mode=history',
+      success: () => {
+        console.log('跳转到学习历史页面成功')
+      },
+      fail: (err) => {
+        console.error('跳转到学习历史页面失败', err)
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'error'
+        })
+      }
     })
   },
 
@@ -483,10 +523,13 @@ Page({
     // 同步到云端
     if (this.data.isLogin) {
       wx.cloud.callFunction({
-        name: 'updateUserSettings',
+        name: 'dataService',  // ✅ 更新：使用新的合并云函数
         data: {
-          userId: app.globalData.userId,
-          settings: settings
+          action: 'syncUserData',  // ✅ 新增：指定操作类型
+          data: {
+            userId: app.globalData.userId,
+            settings: settings
+          }
         }
       })
     }
@@ -584,7 +627,7 @@ Page({
   showAbout() {
     wx.showModal({
       title: '关于希希数学小助手',
-      content: '希希数学小助手 v1.0.0\n\n基于AI的智能数学辅导助手，采用苏格拉底式教学法，通过启发式提问帮助学生独立思考和解决问题。\n\n© 2024 希希数学小助手 Team\n保留所有权利',
+      content: '希希数学小助手 v1.0.0\n\n基于AI的智能数学辅导助手，采用引导式教学法，通过启发式提问帮助学生独立思考和解决问题。\n\n© 2024 希希数学小助手 Team\n保留所有权利',
       showCancel: false,
       confirmText: '我知道了'
     })

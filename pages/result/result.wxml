@@ -12,6 +12,77 @@
     <text class="loading-text">{{loadingText}}</text>
   </view>
 
+  <!-- 学习历史模式 -->
+  <view wx:elif="{{mode === 'history'}}" class="history-content">
+    <!-- 顶部导航 -->
+    <view class="top-nav">
+      <view class="nav-left" bindtap="goHome">
+        <text class="iconfont icon-back"></text>
+        <text>返回</text>
+      </view>
+      <view class="nav-title">学习报告</view>
+      <view class="nav-right"></view>
+    </view>
+
+    <!-- 历史统计概览 -->
+    <view wx:if="{{historyList.length > 0}}" class="history-stats">
+      <view class="stats-item">
+        <text class="stats-number">{{historyList.length}}</text>
+        <text class="stats-label">学习次数</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number">{{historyStats.completedCount}}</text>
+        <text class="stats-label">完成次数</text>
+      </view>
+      <view class="stats-item">
+        <text class="stats-number">{{historyStats.avgScore}}</text>
+        <text class="stats-label">平均分</text>
+      </view>
+    </view>
+
+    <!-- 历史记录列表 -->
+    <view wx:if="{{historyList.length > 0}}" class="history-list">
+      <view wx:for="{{historyList}}" wx:key="id" class="history-item" bindtap="onHistoryItemTap" data-item="{{item}}">
+        <view class="history-main">
+          <view class="history-question">
+            <text class="question-preview">{{item.questionPreview}}</text>
+          </view>
+          
+          <view class="history-info">
+            <view class="info-row">
+              <view class="status-badge status-{{item.status}}">
+                <text>{{item.statusText}}</text>
+              </view>
+              <text class="history-time">{{item.timeText}}</text>
+            </view>
+            
+            <view wx:if="{{item.score !== null}}" class="info-row">
+              <text class="score-text">得分：{{item.score}}/100</text>
+              <text class="duration-text">用时：{{item.duration}}分钟</text>
+            </view>
+          </view>
+        </view>
+        
+        <view class="history-arrow">
+          <text class="iconfont icon-arrow-right"></text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view wx:else class="empty-history">
+      <view class="empty-icon">
+        <text class="iconfont icon-history"></text>
+      </view>
+      <text class="empty-title">暂无学习记录</text>
+      <text class="empty-desc">开始你的第一次学习吧！</text>
+      <button class="start-learning-btn" bindtap="goHome">
+        <text class="iconfont icon-camera"></text>
+        <text>开始学习</text>
+      </button>
+    </view>
+  </view>
+
   <!-- 报告内容 -->
   <view wx:else class="report-content">
     <!-- 顶部导航 -->
@@ -58,7 +129,7 @@
     <!-- 题目回顾 -->
     <view class="question-review">
       <view class="section-title">
-        <text class="iconfont icon-question"></text>
+        <text class="iconfont icon-wenhao"></text>
         <text>题目回顾</text>
       </view>
       <view class="question-content">
@@ -117,13 +188,13 @@
     <view class="performance-section">
       <!-- 优势点 -->
       <view wx:if="{{reportData.performance.strengths.length > 0}}" class="strengths">
-        <view class="section-title">
-          <text class="iconfont icon-thumbs-up"></text>
-          <text>你的优势</text>
-        </view>
+      <view class="section-title">
+        <text class="iconfont icon-dianzan"></text>
+        <text>你的优势</text>
+      </view>
         <view class="strength-list">
           <view wx:for="{{reportData.performance.strengths}}" wx:key="index" class="strength-item">
-            <text class="strength-icon">✓</text>
+            <text class="strength-icon iconfont icon-check"></text>
             <text class="strength-text">{{item}}</text>
           </view>
         </view>
@@ -131,13 +202,13 @@
       
       <!-- 改进建议 -->
       <view wx:if="{{reportData.performance.improvements.length > 0}}" class="improvements">
-        <view class="section-title">
-          <text class="iconfont icon-lightbulb"></text>
-          <text>改进建议</text>
-        </view>
+      <view class="section-title">
+        <text class="iconfont icon-lightbulb"></text>
+        <text>改进建议</text>
+      </view>
         <view class="improvement-list">
           <view wx:for="{{reportData.performance.improvements}}" wx:key="index" class="improvement-item">
-            <text class="improvement-icon">💡</text>
+            <text class="improvement-icon iconfont icon-lightbulb"></text>
             <text class="improvement-text">{{item}}</text>
           </view>
         </view>
@@ -170,7 +241,7 @@
     <!-- 学习建议 -->
     <view wx:if="{{reportData.suggestions.length > 0}}" class="suggestions-section">
       <view class="section-title" bindtap="viewDetailAnalysis" data-type="suggestions">
-        <text class="iconfont icon-suggestion"></text>
+        <text class="iconfont icon-lightbulb"></text>
         <text>学习建议</text>
         <text class="iconfont icon-arrow-right"></text>
       </view>
@@ -209,7 +280,7 @@
       </button>
       
       <button class="action-btn secondary" bindtap="saveReportToAlbum">
-        <text class="iconfont icon-download"></text>
+        <text class="iconfont icon-save"></text>
         <text>保存报告</text>
       </button>
     </view>
