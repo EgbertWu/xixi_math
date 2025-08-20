@@ -13,7 +13,7 @@ const db = cloud.database()
 /**
  * 云函数入口函数
  * @param {Object} event - 事件参数
- * @param {string} event.userId - 用户ID
+ * @param {string} event.openid - 用户openid
  * @param {number} event.page - 页码（从1开始）
  * @param {number} event.pageSize - 每页数量
  * @param {string} event.type - 历史类型（sessions/reports/all）
@@ -25,7 +25,7 @@ exports.main = async (event, context) => {
   
   try {
     const { 
-      userId, 
+      openid, 
       page = 1, 
       pageSize = 10, 
       type = 'all',
@@ -34,11 +34,11 @@ exports.main = async (event, context) => {
     } = event
     
     // 参数验证
-    if (!userId) {
+    if (!openid) {
       return {
         success: false,
-        error: '缺少用户ID',
-        code: 'MISSING_USER_ID'
+        error: '缺少用户openid',
+        code: 'MISSING_OPENID'
       }
     }
     
@@ -52,16 +52,16 @@ exports.main = async (event, context) => {
     // 根据类型获取不同的历史数据
     switch (type) {
       case 'sessions':
-        result = await getLearningSessionHistory(userId, skip, validPageSize, startDate, endDate)
+        result = await getLearningSessionHistory(openid, skip, validPageSize, startDate, endDate)
         break
         
       case 'reports':
-        result = await getLearningReportHistory(userId, skip, validPageSize, startDate, endDate)
+        result = await getLearningReportHistory(openid, skip, validPageSize, startDate, endDate)
         break
         
       case 'all':
       default:
-        result = await getAllHistory(userId, skip, validPageSize, startDate, endDate)
+        result = await getAllHistory(openid, skip, validPageSize, startDate, endDate)
         break
     }
     
@@ -90,16 +90,16 @@ exports.main = async (event, context) => {
 
 /**
  * 获取学习会话历史
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户openid
  * @param {number} skip - 跳过数量
  * @param {number} limit - 限制数量
  * @param {string} startDate - 开始日期
  * @param {string} endDate - 结束日期
  * @returns {Object} 会话历史数据
  */
-async function getLearningSessionHistory(userId, skip, limit, startDate, endDate) {
+async function getLearningSessionHistory(openid, skip, limit, startDate, endDate) {
   // 构建查询条件
-  const whereCondition = { userId: userId }
+  const whereCondition = { openid: openid }
   
   // 添加日期过滤
   if (startDate || endDate) {
@@ -144,11 +144,11 @@ async function getLearningSessionHistory(userId, skip, limit, startDate, endDate
     startTime: session.startTime,
     endTime: session.endTime,
     progress: {
-      current: session.currentRound || 0,
+      current: session.currentRound || 1,
       total: session.totalRounds || 3
     },
-    subject: session.aiAnalysis?.subject || '数学',
-    difficulty: session.aiAnalysis?.difficulty || '中等',
+    difficulty: session.aiAnalysis?.difficulty || 3,
+    gradeLevel: session.aiAnalysis?.gradeLevel || '未知',
     type: 'session'
   }))
   
@@ -161,16 +161,16 @@ async function getLearningSessionHistory(userId, skip, limit, startDate, endDate
 
 /**
  * 获取学习报告历史
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户openid
  * @param {number} skip - 跳过数量
  * @param {number} limit - 限制数量
  * @param {string} startDate - 开始日期
  * @param {string} endDate - 结束日期
  * @returns {Object} 报告历史数据
  */
-async function getLearningReportHistory(userId, skip, limit, startDate, endDate) {
+async function getLearningReportHistory(openid, skip, limit, startDate, endDate) {
   // 构建查询条件
-  const whereCondition = { userId: userId }
+  const whereCondition = { openid: openid }
   
   // 添加日期过滤
   if (startDate || endDate) {
@@ -233,18 +233,18 @@ async function getLearningReportHistory(userId, skip, limit, startDate, endDate)
 
 /**
  * 获取所有历史（会话和报告混合）
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户openid
  * @param {number} skip - 跳过数量
  * @param {number} limit - 限制数量
  * @param {string} startDate - 开始日期
  * @param {string} endDate - 结束日期
  * @returns {Object} 混合历史数据
  */
-async function getAllHistory(userId, skip, limit, startDate, endDate) {
+async function getAllHistory(openid, skip, limit, startDate, endDate) {
   // 分别获取会话和报告数据
   const [sessionsResult, reportsResult] = await Promise.all([
-    getLearningSessionHistory(userId, 0, 100, startDate, endDate), // 获取更多数据用于混合排序
-    getLearningReportHistory(userId, 0, 100, startDate, endDate)
+    getLearningSessionHistory(openid, 0, 100, startDate, endDate), // 获取更多数据用于混合排序
+    getLearningReportHistory(openid, 0, 100, startDate, endDate)
   ])
   
   // 合并数据并按时间排序

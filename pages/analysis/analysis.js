@@ -81,7 +81,7 @@ Page({
         name: 'getReportData',
         data: {
           sessionId: this.data.sessionId,
-          userId: app.globalData.userId
+          openid: app.globalData.openid
         },
         success: (res) => {
           console.log('报告数据获取成功', res)

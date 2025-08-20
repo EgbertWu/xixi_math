@@ -15,11 +15,11 @@ const db = cloud.database()
  * 云函数入口函数
  * @param {Object} event - 事件参数
  * @param {string} event.imageBase64 - 图片Base64数据
- * @param {string} event.userId - 用户ID
+ * @param {string} event.openid - 用户ID
  * @param {string} event.sessionId - 会话ID
  */
 exports.main = async (event, context) => {
-  const { imageBase64, userId, sessionId } = event;
+  const { imageBase64, openid, sessionId } = event;
   
   try {
     // 验证必要参数
@@ -30,7 +30,7 @@ exports.main = async (event, context) => {
       };
     }
 
-    console.log('开始分析图片，用户ID:', userId, '会话ID:', sessionId);
+    console.log('开始分析图片，用户ID:', openid, '会话ID:', sessionId);
     
     // 直接使用Base64数据调用qwen-vl-max模型
     const analysisResult = await analyzeWithQwenVLMax(imageBase64);
@@ -42,7 +42,7 @@ exports.main = async (event, context) => {
     // 🚀 优化：并行执行数据库操作，不阻塞主流程
     const sessionData = {
       sessionId: sessionId,
-      userId: userId,
+      openid: openid,
       questionText: analysisResult.data.questionText,
       questionImage: 'base64_image',
       aiAnalysis: analysisResult.data,
@@ -55,7 +55,7 @@ exports.main = async (event, context) => {
     Promise.all([
       saveSessionToDatabase(sessionData),
       recordUserBehavior({
-        userId: userId,
+        openid: openid,
         action: 'analyze_question',
         sessionId: sessionId,
         timestamp: new Date(),
@@ -142,6 +142,7 @@ function buildIntelligentPrompt() {
   "difficulty": 1-5,
   "keyNumbers": ["关键数字"],
   "keyRelation": "核心数量关系",
+  "finalAnswer": "最终答案(用于系统验证，不显示给学生)",
   "questions": [
     "追问1：(≤20字)"
   ]
@@ -164,6 +165,7 @@ function buildIntelligentPrompt() {
   "difficulty": 2,
   "keyNumbers": ["60", "75", "45"],
   "keyRelation": "一套运动服=上衣+裤子，总价=单价×数量",
+  "finalAnswer": "7200元",
   "questions": [
     "一套运动服多少钱？"
   ]
@@ -212,7 +214,7 @@ async function analyzeWithQwenVLMax(imageBase64) {
         }
       ],
       max_tokens: 4000,
-      temperature: 0.7,
+      temperature: 0.8,
       response_format: { type: "json_object" }  // 强制JSON格式输出
     });
     
@@ -260,6 +262,7 @@ function validateAndEnhanceAnalysis(analysisData) {
     difficulty: (analysisData.difficulty >= 1 && analysisData.difficulty <= 5) ? analysisData.difficulty : 3,
     keyNumbers: Array.isArray(analysisData.keyNumbers) ? analysisData.keyNumbers : defaultData.keyNumbers,
     keyRelation: analysisData.keyRelation || defaultData.keyRelation,
+    finalAnswer: analysisData.finalAnswer || defaultData.finalAnswer,
     questions: Array.isArray(analysisData.questions) ? analysisData.questions : 
                (analysisData.questions ? [analysisData.questions] : defaultData.questions)
   };
@@ -276,6 +279,7 @@ function createDefaultAnalysis() {
     difficulty: 3,
     keyNumbers: ["暂无"],
     keyRelation: "需要分析数量关系",
+    finalAnswer: "无法计算",
     questions: [
       "你能找到题目中的数字吗？"
     ]

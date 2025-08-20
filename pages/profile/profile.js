@@ -10,6 +10,8 @@ Page({
   data: {
     userInfo: null, // 用户信息
     isLogin: false, // 是否已登录
+    tempAvatarUrl: '', // 临时头像URL
+    tempNickname: '', // 临时昵称
     
     // 学习统计数据
     learningStats: {
@@ -98,13 +100,6 @@ Page({
         badge: ''
       },
       {
-        id: 'settings',
-        name: '设置',
-        icon: 'icon-setting',
-        desc: '应用设置',
-        badge: ''
-      },
-      {
         id: 'feedback',
         name: '意见反馈',
         icon: 'icon-wenhao',
@@ -117,9 +112,15 @@ Page({
         icon: 'icon-brain',
         desc: '希希数学小助手介绍',
         badge: ''
+      },
+      {
+        id: 'settings',
+        name: '设置',
+        icon: 'icon-setting',
+        desc: '应用设置',
+        badge: ''
       }
-    ],
-    
+    ], 
     isLoading: true
   },
 
@@ -192,7 +193,7 @@ Page({
    */
   syncUserDataFromCloud() {
     // 检查用户是否登录
-    if (!app.globalData.userId) {
+    if (!app.globalData.openid) {
       this.setData({ isLoading: false });
       return;
     }
@@ -200,7 +201,7 @@ Page({
     wx.cloud.callFunction({
       name: 'getUserHistory',
       data: {
-        userId: app.globalData.userId
+        oepnid: app.globalData.oepnid
       },
       success: (res) => {
         console.log('用户数据同步成功', res)
@@ -292,13 +293,12 @@ Page({
    * 用户登录
    */
   handleLogin() {
-    wx.getUserProfile({
-      desc: '用于完善用户资料',
+    wx.getUserInfo({
       success: (res) => {
         console.log('获取用户信息成功', res)
         
         const userInfo = res.userInfo
-        
+        console.log('用户信息userinfo:', userInfo)
         // 保存用户信息
         app.globalData.userInfo = userInfo
         wx.setStorageSync('userInfo', userInfo)
@@ -330,12 +330,16 @@ Page({
    * @param {Object} userInfo - 用户信息
    */
   syncUserInfoToCloud(userInfo) {
+    console.log('准备同步用户数据:', {
+      openid: app.globalData.openid,
+      userInfo: userInfo
+    })
     wx.cloud.callFunction({
       name: 'dataService',  // ✅ 更新：使用新的合并云函数
       data: {
         action: 'syncUserData',  // ✅ 新增：指定操作类型
         data: {
-          userId: app.globalData.userId,
+          openid: app.globalData.openid,
           userInfo: userInfo,
           timestamp: new Date().toISOString()
         }
@@ -527,7 +531,7 @@ Page({
         data: {
           action: 'syncUserData',  // ✅ 新增：指定操作类型
           data: {
-            userId: app.globalData.userId,
+            openid: app.globalData.openid,
             settings: settings
           }
         }
@@ -656,5 +660,114 @@ Page({
       title: '希希数学小助手 - AI数学辅导助手，让学习更有趣！',
       imageUrl: '/images/share-timeline.png'
     }
+  },
+
+  /**
+   * 处理头像选择
+   * @param {Object} e - 事件对象
+   */
+  onChooseAvatar(e) {
+    console.log('选择头像', e)
+    const { avatarUrl } = e.detail
+    this.setData({
+      tempAvatarUrl: avatarUrl
+    })
+    console.log('临时头像URL:', avatarUrl)
+  },
+
+  /**
+   * 处理昵称输入
+   * @param {Object} e - 事件对象
+   */
+  onNicknameInput(e) {
+    const nickname = e.detail.value
+    this.setData({
+      tempNickname: nickname
+    })
+    console.log('输入昵称:', nickname)
+  },
+
+  /**
+   * 提交用户信息
+   * @param {Object} e - 表单提交事件
+   */
+  onSubmitUserInfo(e) {
+    const { tempAvatarUrl, tempNickname } = this.data
+
+    if (!tempAvatarUrl || !tempNickname) {
+      app.showError('请完善头像和昵称信息')
+      return
+    }
+
+    // 上传头像到云存储
+    this.uploadAvatarToCloud(tempAvatarUrl, tempNickname)
+  },
+
+  /**
+   * 上传头像到云存储
+   * @param {string} tempFilePath - 临时文件路径
+   * @param {string} nickname - 用户昵称
+   */
+  uploadAvatarToCloud(tempFilePath, nickname) {
+    wx.showLoading({ title: '上传中...' })
+
+    // 生成唯一文件名
+    const timestamp = Date.now()
+    const cloudPath = `avatars/${timestamp}_avatar.jpg`
+
+    wx.cloud.uploadFile({
+      cloudPath: cloudPath,
+      filePath: tempFilePath,
+      success: (uploadRes) => {
+        console.log('头像上传成功', uploadRes)
+
+        // 构建用户信息
+        const userInfo = {
+          nickName: nickname,
+          avatarUrl: uploadRes.fileID,
+          gender: 0, // 默认值
+          country: '',
+          province: '',
+          city: '',
+          language: 'zh_CN'
+        }
+
+        // 保存用户信息
+        this.saveUserInfo(userInfo)
+      },
+      fail: (err) => {
+        console.error('头像上传失败', err)
+        wx.hideLoading()
+        app.showError('头像上传失败，请重试')
+      }
+    })
+  },
+
+  /**
+   * 保存用户信息
+   * @param {Object} userInfo - 用户信息
+   */
+  saveUserInfo(userInfo) {
+    // 保存到全局数据和本地存储
+    app.globalData.userInfo = userInfo
+    wx.setStorageSync('userInfo', userInfo)
+
+    this.setData({
+      userInfo: userInfo,
+      isLogin: true,
+      tempAvatarUrl: '',
+      tempNickname: ''
+    })
+
+    // 同步用户信息到云端
+    this.syncUserInfoToCloud(userInfo)
+
+    wx.hideLoading()
+    app.showSuccess('设置成功')
+
+    // 记录登录行为
+    app.trackUserBehavior('user_login', {
+      loginMethod: 'avatar_nickname'
+    })
   }
 })

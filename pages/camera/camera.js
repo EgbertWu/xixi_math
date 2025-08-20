@@ -257,11 +257,6 @@ Page({
       processingText: '识别题目'
     });
   
-    // 移除弹窗显示，只保留背景处理流程
-    // wx.showLoading({
-    //   title: '正在识别...',
-    //   mask: true
-    // });
   
     // 将图片保存到全局变量
     app.globalData = app.globalData || {};
@@ -283,7 +278,7 @@ Page({
           name: 'analyzeQuestion',
           data: {
             imageBase64: base64Data,
-            userId: wx.getStorageSync('userId') || 'anonymous_' + Date.now(),
+            openid: wx.getStorageSync('openid') || 'anonymous_' + Date.now(),
             sessionId: 'session_' + Date.now()
           },
           success: (res) => {

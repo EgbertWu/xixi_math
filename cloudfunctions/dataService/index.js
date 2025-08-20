@@ -14,14 +14,16 @@ const db = cloud.database()
 /**
  * 云函数入口函数
  * @param {Object} event - 事件参数
- * @param {string} event.action - 操作类型：'recordBehavior' 记录行为 | 'syncUserData' 同步用户数据 | 'updateSessionProgress' 更新会话进度
+ * @param {string} event.action - 操作类型：'recordBehavior' 记录行为 | 'syncUserData' 同步用户数据 | 'updateSessionProgress' 更新会话进度 | 'saveLearningHistory' 保存学习历史
  * @param {Object} event.data - 操作数据
+ * @param {string} event.openid - 用户ID（用于学习历史相关操作）
+ * @param {Object} event.historyData - 历史数据（用于保存学习历史）
  */
 exports.main = async (event, context) => {
   console.log('dataService 云函数开始执行', event)
   
   try {
-    const { action, data } = event
+    const { action, data, openid, historyData } = event
     
     // 参数验证
     if (!action) {
@@ -36,6 +38,18 @@ exports.main = async (event, context) => {
         return await syncUserData(data)
       case 'updateSessionProgress':
         return await updateSessionProgress(data)
+      case 'saveLearningHistory':
+        // 新增：处理保存学习历史的请求
+        return await addLearningHistory({
+          openid: openid,
+          sessionInfo: historyData
+        })
+      case 'getLearningHistory':
+        // 新增：获取学习历史
+        return await getLearningHistory(data)
+      case 'getRecentLearningHistory':
+        // 新增：获取最近学习历史
+        return await getRecentLearningHistory(data)
       default:
         return createErrorResponse('无效的操作类型', 'INVALID_ACTION')
     }
@@ -49,7 +63,6 @@ exports.main = async (event, context) => {
 /**
  * 记录用户行为数据
  * @param {Object} behaviorData - 行为数据
- * @param {string} behaviorData.userId - 用户ID
  * @param {string} behaviorData.action - 行为类型
  * @param {Object} behaviorData.data - 行为数据
  * @param {string} behaviorData.page - 页面路径
@@ -60,19 +73,20 @@ async function recordBehavior(behaviorData) {
   console.log('记录用户行为...')
   
   try {
-    const { userId, action, data, page, timestamp } = behaviorData
-    
-    // 参数验证
-    if (!userId || !action) {
-      return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
-    }
+    const { action, data, page, timestamp } = behaviorData
     
     // 获取微信用户信息
     const wxContext = cloud.getWXContext()
+    const openid = wxContext.OPENID
+    
+    // 参数验证
+    if (!openid || !action) {
+      return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
+    }
     
     // 构建行为记录
     const behaviorRecord = {
-      userId: userId,
+      openid: openid,  // 使用openid替代openid
       action: action,
       data: data || {},
       page: page || '',
@@ -81,7 +95,7 @@ async function recordBehavior(behaviorData) {
       
       // 微信环境信息
       wxInfo: {
-        openid: wxContext.OPENID,
+        openid: openid,
         appid: wxContext.APPID,
         unionid: wxContext.UNIONID
       },
@@ -117,11 +131,11 @@ async function recordBehavior(behaviorData) {
 }
 
 /**
- * 同步用户数据到云端
+ * 同步用户数据到云端数据库
+ * 修改原因：优化用户数据同步逻辑，先检查用户是否存在，再决定新增或更新
  * @param {Object} userData - 用户数据
- * @param {string} userData.userId - 用户ID
- * @param {Object} userData.userInfo - 用户信息
- * @param {Object} userData.learningStats - 学习统计
+ * @param {Object} userData.userInfo - 用户基本信息
+ * @param {Object} userData.learningStats - 学习统计数据
  * @param {Object} userData.settings - 用户设置
  * @param {string} userData.timestamp - 时间戳
  * @returns {Object} 同步结果
@@ -129,29 +143,48 @@ async function recordBehavior(behaviorData) {
 async function syncUserData(userData) {
   console.log('同步用户数据...')
   
+  // 添加调试日志 - 查看完整的输入数据
+  console.log('=== 调试信息开始 ===')
+  console.log('接收到的完整 userData:', JSON.stringify(userData, null, 2))
+  
   try {
-    const { userId, userInfo, learningStats, settings, timestamp } = userData
+    const { userProfile, learningStats, settings, timestamp } = userData
     
-    // 参数验证
-    if (!userId) {
-      return createErrorResponse('缺少用户ID', 'MISSING_USER_ID')
+    // 详细调试 userProfile
+    console.log('解构后的 userProfile:', JSON.stringify(userProfile, null, 2))
+    console.log('userProfile 是否存在:', !!userProfile)
+    
+    if (userProfile) {
+      console.log('userProfile.nickName:', userProfile.nickName)
+      console.log('userProfile.nickname:', userProfile.nickname)
+      console.log('userProfile.avatarUrl:', userProfile.avatarUrl)
+      console.log('userProfile 所有键:', Object.keys(userProfile))
+    } else {
+      console.log('userProfile 为空或未定义')
     }
+    console.log('=== 调试信息结束 ===')
     
     // 获取微信用户信息
     const wxContext = cloud.getWXContext()
+    const openid = wxContext.OPENID
+    
+    // 参数验证
+    if (!openid) {
+      return createErrorResponse('无法获取用户标识', 'MISSING_OPENID')
+    }
     
     // 构建用户数据
     const updateData = {
-      userId: userId,
-      openid: wxContext.OPENID,
+      openid: openid,
       lastSyncTime: timestamp || new Date().toISOString(),
       platform: 'miniprogram'
     }
     
     // 添加用户信息
-    if (userInfo) {
+    // 在第165行附近，修复变量名
+    if (userProfile) {
       updateData.userInfo = {
-        ...userInfo,
+        ...userProfile,
         updateTime: new Date().toISOString()
       }
     }
@@ -172,41 +205,59 @@ async function syncUserData(userData) {
       }
     }
     
-    // 尝试更新现有用户数据
+    // 先检查用户是否存在
     try {
-      const updateResult = await db.collection('users').doc(userId).update({
+      // 尝试获取现有用户数据
+      const existingUser = await db.collection('users').doc(openid).get()
+      
+      // 用户存在，执行更新操作
+      console.log('用户已存在，执行更新操作')
+      await db.collection('users').doc(openid).update({
         data: updateData
       })
       
-      console.log('用户数据更新成功:', updateResult)
+      console.log('用户数据更新成功')
       
-      // 获取更新后的完整用户数据
-      const userResult = await db.collection('users').doc(userId).get()
+      // 重新获取更新后的完整用户数据
+      const updatedUser = await db.collection('users').doc(openid).get()
       
       return {
         success: true,
-        data: userResult.data,
+        data: updatedUser.data,
         action: 'updated'
       }
       
-    } catch (updateError) {
-      if (updateError.errCode === -502002) {
-        // 用户不存在，创建新用户
-        console.log('用户不存在，创建新用户')
+    } catch (getError) {
+      // 用户不存在（errCode: -1），创建新用户
+      if (getError.errCode === -1) {
+        console.log('用户不存在，创建新用户，使用从前端传入的微信用户信息')
         
+        // 验证是否有从前端传入的用户信息
+        if (!userProfile || (!userProfile.nickName && !userProfile.nickname)) {
+          return createErrorResponse('创建新用户需要提供微信用户信息', 'MISSING_USER_INFO')
+        }
+        
+        // 创建新用户数据对象
         const newUserData = {
-          ...updateData,
-          createTime: new Date().toISOString(),
+          openid: openid,
+          lastSyncTime: new Date().toISOString(),
+          platform: 'miniprogram',
           
-          // 默认用户信息
-          userInfo: userInfo || {
-            nickname: '新用户',
-            avatar: '',
+          // 使用从前端传入的真实微信用户信息
+          userInfo: {
+            nickname: userProfile.nickName || userProfile.nickname || '微信用户',
+            avatar: userProfile.avatarUrl || userProfile.avatar || '',
+            gender: userProfile.gender || 0,
+            country: userProfile.country || '',
+            province: userProfile.province || '',
+            city: userProfile.city || '',
+            language: userProfile.language || 'zh_CN',
             level: 1,
-            experience: 0
+            experience: 0,
+            updateTime: new Date().toISOString()
           },
           
-          // 默认学习统计
+          // 初始化学习统计
           learningStats: learningStats || {
             totalQuestions: 0,
             completedSessions: 0,
@@ -214,29 +265,39 @@ async function syncUserData(userData) {
             averageScore: 0,
             bestScore: 0,
             currentStreak: 0,
-            longestStreak: 0
+            longestStreak: 0,
+            updateTime: new Date().toISOString()
           },
           
-          // 默认设置
+          // 初始化设置
           settings: settings || {
             notifications: true,
             soundEffects: true,
             autoSave: true,
-            dataSync: true
+            dataSync: true,
+            updateTime: new Date().toISOString()
           },
           
-          // 默认成就
+          // 初始化成就
           achievements: {
             unlocked: [],
-            progress: {}
+            progress: {},
+            updateTime: new Date().toISOString()
+          },
+          
+          // 微信环境信息
+          wxInfo: {
+            openid: openid,
+            appid: wxContext.APPID,
+            unionid: wxContext.UNIONID || null
           }
         }
         
-        const createResult = await db.collection('users').doc(userId).set({
+        await db.collection('users').doc(openid).set({
           data: newUserData
         })
         
-        console.log('新用户创建成功:', createResult)
+        console.log('新用户创建成功')
         
         return {
           success: true,
@@ -245,55 +306,90 @@ async function syncUserData(userData) {
         }
         
       } else {
-        throw updateError
+        // 其他错误，重新抛出
+        console.error('获取用户数据时发生未知错误:', getError)
+        throw getError
       }
     }
     
-  } catch (error) {
-    console.error('同步用户数据失败:', error)
-    throw error
-  }
+    } catch (error) {
+      console.error('同步用户数据失败:', error)
+      return createErrorResponse(error.message || '同步用户数据失败', 'SYNC_ERROR')
+    }
 }
 
 /**
  * 更新会话进度（新增功能，解决之前 learning.js 中的问题）
  * @param {Object} progressData - 进度数据
  * @param {string} progressData.sessionId - 会话ID
- * @param {string} progressData.userId - 用户ID
+ * @param {string} progressData.openid - 用户ID
  * @param {Array} progressData.dialogue - 对话数据
  * @param {number} progressData.currentRound - 当前轮次
  * @returns {Object} 更新结果
  */
 async function updateSessionProgress(progressData) {
-  console.log('更新会话进度...')
+  console.log('更新会话进度...', progressData)
   
   try {
-    const { sessionId, userId, dialogue, currentRound } = progressData
+    const { 
+      sessionId, 
+      dialogue, 
+      currentRound, 
+      status,
+      updateTime,
+      lastAnswerCheck,
+      endTime,
+      completionReason
+    } = progressData
+    
+    // 获取微信用户信息
+    const wxContext = cloud.getWXContext()
+    const openid = wxContext.OPENID
     
     // 参数验证
-    if (!sessionId || !userId) {
+    if (!sessionId || !openid) {
       return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
+    }
+    
+    // 构建更新数据
+    const updateData = {
+      dialogue: dialogue,
+      currentRound: currentRound,
+      updateTime: updateTime || new Date().toISOString()
+    }
+    
+    // 添加可选字段
+    if (status) {
+      updateData.status = status
+      console.log(`会话状态更新为: ${status}`)
+    }
+    if (lastAnswerCheck) updateData.lastAnswerCheck = lastAnswerCheck
+    if (endTime) {
+      updateData.endTime = endTime
+      console.log(`会话结束时间: ${endTime}`)
+    }
+    if (completionReason) {
+      updateData.completionReason = completionReason
+      console.log(`完成原因: ${completionReason}`)
     }
     
     // 更新会话数据
     const updateResult = await db.collection('learning_sessions')
       .where({
         sessionId: sessionId,
-        userId: userId
+        openid: openid
       })
       .update({
-        data: {
-          dialogue: dialogue,
-          currentRound: currentRound,
-          updateTime: new Date().toISOString()
-        }
+        data: updateData
       })
     
     console.log('会话进度更新成功:', updateResult)
+    console.log('更新的字段:', Object.keys(updateData))
     
     return {
       success: true,
-      updated: updateResult.stats.updated
+      updated: updateResult.stats.updated,
+      updatedFields: Object.keys(updateData)
     }
     
   } catch (error) {
@@ -308,33 +404,33 @@ async function updateSessionProgress(progressData) {
  */
 async function processBehaviorAnalysis(behaviorRecord) {
   try {
-    const { userId, action, data } = behaviorRecord
+    const { openid, action, data } = behaviorRecord
     
     // 根据不同行为类型进行分析
     switch (action) {
       case 'page_view':
-        await updatePageViewStats(userId, data.page)
+        await updatePageViewStats(openid, data.page)
         break
         
       case 'learning_start':
-        await updateLearningStats(userId, 'start')
+        await updateLearningStats(openid, 'start')
         break
         
       case 'learning_complete':
-        await updateLearningStats(userId, 'complete', data)
+        await updateLearningStats(openid, 'complete', data)
         break
         
       case 'question_answered':
-        await updateAnswerStats(userId, data)
+        await updateAnswerStats(openid, data)
         break
         
       case 'feature_used':
-        await updateFeatureUsageStats(userId, data.feature)
+        await updateFeatureUsageStats(openid, data.feature)
         break
         
       default:
         // 其他行为的通用处理
-        await updateGeneralStats(userId, action)
+        await updateGeneralStats(openid, action)
         break
     }
     
@@ -346,15 +442,15 @@ async function processBehaviorAnalysis(behaviorRecord) {
 
 /**
  * 更新页面访问统计
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户ID
  * @param {string} page - 页面路径
  */
-async function updatePageViewStats(userId, page) {
+async function updatePageViewStats(openid, page) {
   try {
     const today = new Date().toISOString().split('T')[0]
     
     // 更新用户页面访问统计
-    await db.collection('user_stats').doc(userId).update({
+    await db.collection('user_stats').doc(openid).update({
       data: {
         [`pageViews.${page}`]: db.command.inc(1),
         [`dailyPageViews.${today}.${page}`]: db.command.inc(1),
@@ -365,7 +461,7 @@ async function updatePageViewStats(userId, page) {
   } catch (error) {
     if (error.errCode === -502002) {
       // 文档不存在，创建新文档
-      await db.collection('user_stats').doc(userId).set({
+      await db.collection('user_stats').doc(openid).set({
         data: {
           pageViews: { [page]: 1 },
           dailyPageViews: { [today]: { [page]: 1 } },
@@ -380,11 +476,11 @@ async function updatePageViewStats(userId, page) {
 
 /**
  * 更新学习统计
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户ID
  * @param {string} type - 类型（start/complete）
  * @param {Object} data - 数据
  */
-async function updateLearningStats(userId, type, data = {}) {
+async function updateLearningStats(openid, type, data = {}) {
   try {
     const today = new Date().toISOString().split('T')[0]
     const updateData = {
@@ -408,7 +504,7 @@ async function updateLearningStats(userId, type, data = {}) {
       }
     }
     
-    await db.collection('user_stats').doc(userId).update({
+    await db.collection('user_stats').doc(openid).update({
       data: updateData
     })
     
@@ -426,7 +522,7 @@ async function updateLearningStats(userId, type, data = {}) {
         newStats.dailyLearningStats[today] = { sessions: 1 }
       }
       
-      await db.collection('user_stats').doc(userId).set({
+      await db.collection('user_stats').doc(openid).set({
         data: newStats
       })
     } else {
@@ -437,10 +533,10 @@ async function updateLearningStats(userId, type, data = {}) {
 
 /**
  * 更新回答统计
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户ID
  * @param {Object} data - 回答数据
  */
-async function updateAnswerStats(userId, data) {
+async function updateAnswerStats(openid, data) {
   try {
     const updateData = {
       [`answerStats.totalAnswers`]: db.command.inc(1),
@@ -448,13 +544,13 @@ async function updateAnswerStats(userId, data) {
       lastActiveTime: new Date().toISOString()
     }
     
-    await db.collection('user_stats').doc(userId).update({
+    await db.collection('user_stats').doc(openid).update({
       data: updateData
     })
     
   } catch (error) {
     if (error.errCode === -502002) {
-      await db.collection('user_stats').doc(userId).set({
+      await db.collection('user_stats').doc(openid).set({
         data: {
           answerStats: {
             totalAnswers: 1,
@@ -469,12 +565,12 @@ async function updateAnswerStats(userId, data) {
 
 /**
  * 更新功能使用统计
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户ID
  * @param {string} feature - 功能名称
  */
-async function updateFeatureUsageStats(userId, feature) {
+async function updateFeatureUsageStats(openid, feature) {
   try {
-    await db.collection('user_stats').doc(userId).update({
+    await db.collection('user_stats').doc(openid).update({
       data: {
         [`featureUsage.${feature}`]: db.command.inc(1),
         lastActiveTime: new Date().toISOString()
@@ -482,7 +578,7 @@ async function updateFeatureUsageStats(userId, feature) {
     })
   } catch (error) {
     if (error.errCode === -502002) {
-      await db.collection('user_stats').doc(userId).set({
+      await db.collection('user_stats').doc(openid).set({
         data: {
           featureUsage: { [feature]: 1 },
           lastActiveTime: new Date().toISOString()
@@ -494,12 +590,12 @@ async function updateFeatureUsageStats(userId, feature) {
 
 /**
  * 更新通用统计
- * @param {string} userId - 用户ID
+ * @param {string} openid - 用户ID
  * @param {string} action - 行为类型
  */
-async function updateGeneralStats(userId, action) {
+async function updateGeneralStats(openid, action) {
   try {
-    await db.collection('user_stats').doc(userId).update({
+    await db.collection('user_stats').doc(openid).update({
       data: {
         [`generalStats.${action}`]: db.command.inc(1),
         lastActiveTime: new Date().toISOString()
@@ -507,7 +603,7 @@ async function updateGeneralStats(userId, action) {
     })
   } catch (error) {
     if (error.errCode === -502002) {
-      await db.collection('user_stats').doc(userId).set({
+      await db.collection('user_stats').doc(openid).set({
         data: {
           generalStats: { [action]: 1 },
           lastActiveTime: new Date().toISOString()
@@ -528,5 +624,204 @@ function createErrorResponse(message, code) {
     success: false,
     error: message,
     code: code
+  }
+}
+
+/**
+ * 添加学习历史记录
+ * @param {Object} historyData - 历史数据
+ * @param {string} historyData.openid - 用户ID
+ * @param {Object} historyData.sessionInfo - 会话信息
+ * @returns {Object} 添加结果
+ */
+async function addLearningHistory(historyData) {
+  console.log('添加学习历史记录...')
+  
+  try {
+    const { openid, sessionInfo } = historyData
+    
+    // 参数验证
+    if (!openid || !sessionInfo || !sessionInfo.sessionId) {
+      return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
+    }
+    
+    try {
+      // 查询用户是否已有历史记录
+      const existingHistory = await db.collection('learning_history').doc(openid).get()
+      
+      // 更新现有记录
+      const currentData = existingHistory.data
+      const sessions = currentData.sessions || []
+      
+      // 检查是否已存在该会话
+      const existingSessionIndex = sessions.findIndex(s => s.sessionId === sessionInfo.sessionId)
+      
+      if (existingSessionIndex >= 0) {
+        // 更新现有会话
+        sessions[existingSessionIndex] = {
+          ...sessions[existingSessionIndex],
+          ...sessionInfo,
+          lastUpdateTime: new Date().toISOString()
+        }
+      } else {
+        // 添加新会话到开头
+        sessions.unshift({
+          ...sessionInfo,
+          lastUpdateTime: new Date().toISOString()
+        })
+      }
+      
+      // 限制历史记录数量（最多保留50条）
+      if (sessions.length > 50) {
+        sessions.splice(50)
+      }
+      
+      await db.collection('learning_history').doc(openid).update({
+        data: {
+          sessions: sessions,
+          totalSessions: sessions.length,
+          completedSessions: sessions.filter(s => s.status === 'completed').length,
+          lastActiveTime: new Date().toISOString(),
+          updateTime: new Date().toISOString()
+        }
+      })
+      
+    } catch (error) {
+      // 修复：处理文档不存在的多种错误码
+      if (error.errCode === -502002 || error.errCode === -1 || error.errMsg.includes('does not exist')) {
+        // 文档不存在，创建新的历史记录
+        console.log('用户历史记录不存在，创建新记录')
+        
+        await db.collection('learning_history').doc(openid).set({
+          data: {
+            openid: openid,
+            sessions: [{
+              ...sessionInfo,
+              lastUpdateTime: new Date().toISOString()
+            }],
+            totalSessions: 1,
+            completedSessions: sessionInfo.status === 'completed' ? 1 : 0,
+            lastActiveTime: new Date().toISOString(),
+            createTime: new Date().toISOString(),
+            updateTime: new Date().toISOString()
+          }
+        })
+      } else {
+        throw error
+      }
+    }
+    
+    return {
+      success: true,
+      message: '学习历史记录添加成功'
+    }
+    
+  } catch (error) {
+    console.error('添加学习历史记录失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取学习历史记录
+ * @param {Object} queryData - 查询数据
+ * @param {string} queryData.openid - 用户ID
+ * @param {number} queryData.limit - 限制数量
+ * @param {number} queryData.skip - 跳过数量
+ * @param {string} queryData.status - 状态筛选
+ * @returns {Object} 历史记录
+ */
+async function getLearningHistory(queryData) {
+  console.log('获取学习历史记录...')
+  
+  try {
+    const { openid, limit = 20, skip = 0, status } = queryData
+    
+    // 参数验证
+    if (!openid) {
+      return createErrorResponse('缺少用户ID', 'MISSING_USER_ID')
+    }
+    
+    // 查询用户历史记录
+    const historyResult = await db.collection('learning_history').doc(openid).get()
+    
+    if (historyResult.data.length === 0) {
+      return {
+        success: true,
+        data: {
+          sessions: [],
+          totalSessions: 0,
+          completedSessions: 0,
+          hasMore: false
+        }
+      }
+    }
+    
+    const historyData = historyResult.data[0]
+    let sessions = historyData.sessions || []
+    
+    // 状态筛选
+    if (status) {
+      sessions = sessions.filter(s => s.status === status)
+    }
+    
+    // 分页处理
+    const totalCount = sessions.length
+    const paginatedSessions = sessions.slice(skip, skip + limit)
+    
+    return {
+      success: true,
+      data: {
+        sessions: paginatedSessions,
+        totalSessions: historyData.totalSessions || 0,
+        completedSessions: historyData.completedSessions || 0,
+        hasMore: skip + limit < totalCount,
+        totalCount: totalCount
+      }
+    }
+    
+  } catch (error) {
+    console.error('获取学习历史记录失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取最近的学习记录（用于首页展示）
+ * @param {Object} queryData - 查询数据
+ * @param {string} queryData.openid - 用户ID
+ * @param {number} queryData.limit - 限制数量，默认3条
+ * @returns {Object} 最近的学习记录
+ */
+async function getRecentLearningHistory(queryData) {
+  console.log('获取最近学习记录...')
+  
+  try {
+    const { openid, limit = 3 } = queryData
+    
+    // 参数验证
+    if (!openid) {
+      return createErrorResponse('缺少用户ID', 'MISSING_USER_ID')
+    }
+    
+    // 获取历史记录
+    const historyResult = await getLearningHistory({ openid, limit, skip: 0 })
+    
+    if (!historyResult.success) {
+      return historyResult
+    }
+    
+    return {
+      success: true,
+      data: {
+        recentSessions: historyResult.data.sessions,
+        totalSessions: historyResult.data.totalSessions,
+        completedSessions: historyResult.data.completedSessions
+      }
+    }
+    
+  } catch (error) {
+    console.error('获取最近学习记录失败:', error)
+    throw error
   }
 }

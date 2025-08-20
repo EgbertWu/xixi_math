@@ -115,7 +115,7 @@ Page({
         action: 'generate',   // ✅ 指定生成报告操作
         data: {
           sessionId: this.data.sessionId,
-          userId: app.globalData.userId,
+          openid: app.globalData.openid,
           timestamp: new Date().toISOString()
         }
       },
@@ -258,7 +258,7 @@ Page({
     wx.cloud.callFunction({
       name: 'updateUserStats',
       data: {
-        userId: app.globalData.userId,
+        openid: app.globalData.openid,
         stats: newStats,
         timestamp: new Date().toISOString()
       },
@@ -364,7 +364,7 @@ Page({
    */
   loadLearningHistory() {
     // 检查用户是否登录
-    if (!app.globalData.userId) {
+    if (!app.globalData.openid) {
       // 显示默认空状态或本地数据
       this.setData({
         historyList: [],
@@ -380,7 +380,7 @@ Page({
     wx.cloud.callFunction({
       name: 'getUserHistory',
       data: {
-        userId: app.globalData.userId,
+        openid: app.globalData.openid,
         limit: 20 // 限制返回20条记录
       },
       success: (res) => {

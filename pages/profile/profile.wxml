@@ -21,7 +21,7 @@
         
         <view class="user-details">
           <text class="user-name">{{userInfo.nickName}}</text>
-          <text class="user-id">ID: {{userInfo.userId || '希希数学小助手用户'}}</text>
+          <text class="user-id">ID: {{userInfo.openid || '希希数学小助手用户'}}</text>
           <view class="user-level">
             <text class="level-text">学习等级 Lv.{{Math.floor(learningStats.totalQuestions / 5) + 1}}</text>
             <view class="level-progress">
@@ -40,12 +40,41 @@
           <text class="iconfont icon-user"></text>
         </view>
         <view class="login-info">
-          <text class="login-title">登录希希数学小助手</text>
-          <text class="login-desc">登录后可同步学习数据，获得更好的学习体验</text>
-          <button class="login-btn" bindtap="handleLogin">
-            <text class="iconfont icon-wechat"></text>
-            <text>微信登录</text>
-          </button>
+          <text class="login-title">完善个人资料</text>
+          <text class="login-desc">请选择头像和填写昵称，获得更好的学习体验</text>
+          
+          <!-- 头像选择 -->
+          <view class="avatar-section">
+            <text class="section-label">选择头像</text>
+            <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+              <image wx:if="{{tempAvatarUrl}}" src="{{tempAvatarUrl}}" class="temp-avatar" mode="aspectFill"></image>
+              <text wx:else class="iconfont icon-camera"></text>
+              <text wx:if="{{!tempAvatarUrl}}" class="avatar-hint">点击选择头像</text>
+            </button>
+          </view>
+          
+          <!-- 昵称填写 -->
+          <view class="nickname-section">
+            <text class="section-label">填写昵称</text>
+            <form bindsubmit="onSubmitUserInfo">
+              <input 
+                type="nickname" 
+                class="nickname-input" 
+                placeholder="请输入昵称" 
+                value="{{tempNickname}}"
+                bindinput="onNicknameInput"
+                maxlength="20"
+              />
+              <button 
+                form-type="submit" 
+                class="login-btn"
+                disabled="{{!tempAvatarUrl || !tempNickname}}"
+              >
+                <text class="iconfont icon-check"></text>
+                <text>完成设置</text>
+              </button>
+            </form>
+          </view>
         </view>
       </view>
     </view>

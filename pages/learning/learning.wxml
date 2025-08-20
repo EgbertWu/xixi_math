@@ -34,7 +34,7 @@
       <text class="question-text">{{questionText}}</text>
     </view>
     
-    <view class="question-image" wx:if="{{questionImage}}" bindtap="previewImage">
+    <view class="question-image-container" wx:if="{{questionImage && !isHistoryMode}}" bindtap="previewImage">
       <image class="image" src="{{questionImage}}" mode="aspectFit" lazy-load="{{true}}"></image>
       <view class="image-overlay">
         <image class="zoom-icon" src="/images/album-icon.png" lazy-load="{{true}}" mode="aspectFit"></image>
@@ -43,21 +43,30 @@
   </view>
 
   <!-- 对话消息区域 -->
-  <view class="messages-section" id="messages-container">
-    <view class="message-item {{item.type}}" wx:for="{{messages}}" wx:key="id">
-      <!-- 系统消息 -->
-      <view class="system-message" wx:if="{{item.type === 'system'}}">
-        <view class="system-content">
-          <image class="system-icon" src="/images/check-icon.png" lazy-load="{{true}}" mode="aspectFit"></image>
-          <text class="system-text">{{item.content}}</text>
-        </view>
+  <!-- 消息区域 -->
+  <scroll-view 
+    class="messages-container" 
+    scroll-y="true" 
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation="true"
+    enhanced="true"
+    show-scrollbar="false"
+    id="messages-container">
+    
+    <!-- 系统消息 -->
+    <view wx:if="{{questionText}}" class="message system-message" id="message-system">
+      <view class="system-content">
+        <image class="system-icon" src="/images/check-icon.png" lazy-load="{{true}}" mode="aspectFit"></image>
+        <text class="system-text">{{item.content}}</text>
       </view>
-      
+    </view>
+    
+    <!-- 对话消息 -->
+    <view wx:for="{{messages}}" wx:key="id" class="message {{item.type}}-message" id="message-{{index}}">
       <!-- AI消息 -->
-      <view class="ai-message" wx:if="{{item.type === 'ai'}}">
+      <view wx:if="{{item.type === 'ai'}}">
         <view class="message-header">
           <view class="avatar ai-avatar">
-            <!-- 头像不使用懒加载，因为需要立即显示 -->
             <image class="avatar-icon" src="/images/teacher.png" mode="aspectFill"></image>
           </view>
           <view class="sender-info">
@@ -70,15 +79,17 @@
         </view>
         <view class="message-bubble ai-bubble">
           <text class="message-text">{{item.content}}</text>
+          
+          <!-- 新增：查看报告链接 -->
+          <view wx:if="{{item.showReportLink}}" class="report-link-container">
+            <text class="report-link" bindtap="onViewReportTap">查看学习报告</text>
+          </view>
         </view>
       </view>
       
       <!-- 用户消息 -->
-      <view class="user-message" wx:if="{{item.type === 'user'}}">
+      <view wx:if="{{item.type === 'user'}}" class="user-message-container">
         <view class="message-header">
-          <view class="round-badge" wx:if="{{item.round}}">
-            <text class="round-text">第{{item.round}}轮</text>
-          </view>
           <view class="sender-info">
             <text class="sender-name">我的回答</text>
             <text class="message-time">{{item.timestamp}}</text>
@@ -87,34 +98,44 @@
             <image class="avatar-icon" src="/images/student.png" mode="aspectFill"></image>
           </view>
         </view>
-        <view class="message-bubble user-bubble" data-message-id="{{item.id}}" bindtap="showMessageActions">
-          <text class="message-text" selectable="true">{{item.content}}</text>
+        <view class="message-bubble user-bubble" 
+              bindlongpress="showMessageActions" 
+              data-id="{{item.id}}" 
+              data-content="{{item.content}}">
+          <text class="message-text">{{item.content}}</text>
           
-          <!-- 悬浮操作按钮 - 仿ChatGPT -->
-          <view class="message-actions-hover" wx:if="{{currentHoverId === item.id}}">
-            <view class="action-btn-hover" bindtap="copyMessage" data-content="{{item.content}}" data-id="{{item.id}}">
-              <image class="action-icon-small" src="/images/copy-icon.png" mode="aspectFit"></image>
+          <!-- 操作按钮 - 排列成一排 -->
+          <view wx:if="{{currentActionMessageId === item.id}}" class="message-actions">
+            <view class="action-btn copy-btn" 
+                  bindtap="copyMessage" 
+                  data-content="{{item.content}}">
+              <image class="action-icon" src="/images/copy-icon.png" mode="aspectFit"></image>
+              <text class="action-text">复制</text>
             </view>
-            <view class="action-btn-hover" bindtap="editMessage" data-id="{{item.id}}" data-content="{{item.content}}">
-              <image class="action-icon-small" src="/images/edit-icon.png" mode="aspectFit"></image>
+            <view class="action-btn edit-btn" 
+                  bindtap="editMessage" 
+                  data-id="{{item.id}}" 
+                  data-content="{{item.content}}">
+              <image class="action-icon" src="/images/edit-icon.png" mode="aspectFit"></image>
+              <text class="action-text">编辑</text>
             </view>
-          </view>
-          
-          <!-- 编辑模式按钮 -->
-          <view class="edit-actions" wx:if="{{editingMessageId === item.id}}">
-            <view class="edit-btn cancel" bindtap="cancelEdit">
-              <text>取消</text>
-            </view>
-            <view class="edit-btn send" bindtap="confirmEdit" data-id="{{item.id}}">
-              <text>发送</text>
+            <view class="action-btn resend-btn" 
+                  bindtap="resendMessage" 
+                  data-id="{{item.id}}" 
+                  data-content="{{item.content}}">
+              <image class="action-icon" src="/images/resend-icon.png" mode="aspectFit"></image>
+              <text class="action-text">重发</text>
             </view>
           </view>
         </view>
       </view>
     </view>
     
+    <!-- 遮罩层，点击隐藏操作按钮 -->
+    <view wx:if="{{currentActionMessageId}}" class="action-mask" bindtap="hideMessageActions"></view>
+    
     <!-- AI思考中状态 -->
-      <view class="thinking-message" wx:if="{{isAIThinking}}">
+    <view wx:if="{{isAIThinking}}" class="message ai-message thinking" id="message-thinking">
       <view class="message-header">
         <view class="avatar ai-avatar">
           <!-- 头像不使用懒加载 -->
@@ -134,7 +155,7 @@
         <text class="thinking-text">{{thinkingTexts[currentThinkingIndex]}}</text>
       </view>
     </view>
-  </view>
+  </scroll-view>
 
   <!-- 输入区域 -->
   <view class="input-section" wx:if="{{!isSessionComplete}}">
@@ -156,7 +177,6 @@
       </view>
       
       <view class="send-btn {{userInput.trim() ? 'active' : ''}}" bindtap="sendAnswer">
-        <!-- 修改：发送按钮使用发送图标，不使用懒加载（需要立即显示） -->
         <image class="icon-send" src="/images/send.png" mode="aspectFit"></image>
       </view>
     </view>
@@ -165,21 +185,6 @@
       <view class="tip-item">
         <image class="tip-icon" src="/images/flash-on.png" lazy-load="{{true}}" mode="aspectFit"></image>
         <text class="tip-text">详细描述你的思考过程会获得更好的指导</text>
-      </view>
-    </view>
-  </view>
-
-  <!-- 会话完成状态 -->
-  <view class="completion-section" wx:if="{{isSessionComplete}}">
-    <view class="completion-content">
-      <image class="completion-icon" src="/images/check-icon.png" lazy-load="{{true}}" mode="aspectFit"></image>
-      <text class="completion-title">学习完成！</text>
-      <text class="completion-desc">恭喜你完成了这道题的学习，正在为你生成学习报告...</text>
-      
-      <view class="completion-actions">
-        <button class="btn-primary" bindtap="goToResult">
-          查看学习报告
-        </button>
       </view>
     </view>
   </view>

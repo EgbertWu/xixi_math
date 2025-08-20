@@ -6,7 +6,7 @@ App({
    * 在小程序启动时执行，全局只触发一次
    */
   onLaunch() {
-    console.log('希希数学小助手 启动')
+    console.log('希希数学小助手小程序启动')
     
     // 初始化云开发环境
     if (!wx.cloud) {
@@ -42,21 +42,22 @@ App({
 
   /**
    * 初始化用户数据
-   * 创建用户唯一标识和基础信息
+   * 使用 openid 作为用户唯一标识
    */
   initUserData() {
-    // 获取用户唯一标识
-    let userId = wx.getStorageSync('userId')
-    if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-      wx.setStorageSync('userId', userId)
-    }
-    this.globalData.userId = userId
-
-    // 尝试恢复用户信息
-    const userInfo = wx.getStorageSync('userInfo')
-    if (userInfo) {
-      this.globalData.userInfo = userInfo
+    // 先尝试从本地获取 openid
+    const storedOpenid = wx.getStorageSync('openid')
+    const storedUserInfo = wx.getStorageSync('userInfo')
+    
+    if (storedOpenid && storedUserInfo) {
+      // 如果本地有完整的用户信息，直接使用
+      this.globalData.openid = storedOpenid
+      this.globalData.userInfo = storedUserInfo
+      this.globalData.isLogin = true
+      console.log('使用本地用户信息:', storedOpenid)
+    } else {
+      // 如果没有完整信息，获取 openid 但不自动登录
+      this.getOpenId()
     }
 
     // 记录用户启动时间
@@ -65,12 +66,164 @@ App({
   },
 
   /**
+   * 获取用户 openid（不等同于登录）
+   */
+  getOpenId() {
+    wx.cloud.callFunction({
+      name: 'login',
+      success: (res) => {
+        if (res.result.success) {
+          const openid = res.result.openid
+          console.log('获取到 openid:', openid)
+          
+          // 保存 openid 到本地和全局
+          wx.setStorageSync('openid', openid)
+          this.globalData.openid = openid
+          
+          // 注意：这里不设置 isLogin = true
+          // 只有用户主动授权获取用户信息后才算登录
+        } else {
+          console.error('获取 openid 失败:', res.result.error)
+        }
+      },
+      fail: (err) => {
+        console.error('调用 login 云函数失败:', err)
+      }
+    })
+  },
+
+  /**
+   * 用户登录（获取用户信息）
+   * @param {Function} successCallback - 登录成功回调
+   * @param {Function} failCallback - 登录失败回调
+   */
+  userLogin(successCallback, failCallback) {
+    // 如果没有 openid，先获取
+    if (!this.globalData.openid) {
+      this.getOpenId()
+      if (failCallback) failCallback('获取用户标识失败')
+      return
+    }
+    
+    // 获取用户信息
+    wx.getUserInfo({
+      success: (res) => {
+        const userInfo = res.userInfo
+        
+        // 保存用户信息
+        this.globalData.userInfo = userInfo
+        this.globalData.isLogin = true
+        wx.setStorageSync('userInfo', userInfo)
+        
+        console.log('用户登录成功:', userInfo)
+        
+        // 同步用户信息到云端
+        this.syncUserToCloud(userInfo)
+        
+        if (successCallback) successCallback(userInfo)
+      },
+      fail: (err) => {
+        console.error('获取用户信息失败:', err)
+        if (failCallback) failCallback(err)
+      }
+    })
+  },
+
+  /**
+   * 同步用户信息到云端
+   * @param {Object} userInfo - 用户信息
+   */
+  syncUserToCloud(userInfo) {
+    wx.cloud.callFunction({
+      name: 'dataService',
+      data: {
+        action: 'syncUserData',
+        data: {
+          // 移除openid参数，dataService会自动从微信上下文获取openid
+          userInfo: userInfo,
+          timestamp: new Date().toISOString()
+        }
+      },
+      success: (res) => {
+        console.log('用户信息同步成功:', res)
+        // 添加更详细的日志
+        if (res.result && res.result.success) {
+          console.log('数据库操作:', res.result.action)
+          console.log('用户数据:', res.result.data)
+        }
+      },
+      fail: (err) => {
+        console.error('用户信息同步失败:', err)
+        // 添加更详细的错误信息
+        wx.showToast({
+          title: '同步失败',
+          icon: 'error'
+        })
+      }
+    })
+  },
+
+  /**
+   * 检查用户是否已登录
+   * @returns {boolean} 是否已登录
+   */
+  isUserLogin() {
+    return !!(this.globalData.isLogin && this.globalData.userInfo && this.globalData.openid)
+  },
+
+  /**
+   * 要求用户登录
+   * @param {string} message - 提示信息
+   * @param {Function} successCallback - 登录成功回调
+   */
+  requireLogin(message = '此功能需要登录后使用', successCallback) {
+    if (this.isUserLogin()) {
+      if (successCallback) successCallback()
+      return true
+    }
+    
+    wx.showModal({
+      title: '需要登录',
+      content: message,
+      confirmText: '立即登录',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          this.userLogin(successCallback, (err) => {
+            wx.showToast({
+              title: '登录失败',
+              icon: 'error'
+            })
+          })
+        }
+      }
+    })
+    
+    return false
+  },
+
+  /**
+   * 用户退出登录
+   */
+  userLogout() {
+    this.globalData.userInfo = null
+    this.globalData.isLogin = false
+    wx.removeStorageSync('userInfo')
+    
+    wx.showToast({
+      title: '已退出登录',
+      icon: 'success'
+    })
+  },
+
+  /**
    * 全局数据存储
    * 存储应用级别的共享数据
    */
   globalData: {
-    userId: null,           // 用户唯一标识
+    openid: null,           // 用户唯一标识（openid）
     userInfo: null,         // 用户信息
+    isLogin: false,         // 是否已登录
     currentSession: null,   // 当前学习会话
     learningStats: {        // 学习统计数据
       totalQuestions: 0,    // 总题目数
@@ -89,7 +242,7 @@ App({
       // 先保存到本地，确保即使云函数调用失败也有记录
       const localBehaviors = wx.getStorageSync('userBehaviors') || []
       const behaviorData = {
-        userId: this.globalData.userId,
+        openid: this.globalData.openid,
         action: action,
         data: data,
         timestamp: new Date().toISOString(),
@@ -99,17 +252,17 @@ App({
       localBehaviors.push(behaviorData)
       wx.setStorageSync('userBehaviors', localBehaviors.slice(-100)) // 只保留最近100条
       
-      // 如果用户未登录或userId为临时ID，则不调用云函数
-      if (!this.globalData.userInfo || !this.globalData.userId || this.globalData.userId.startsWith('temp_')) {
+      // 只有登录用户才调用云函数记录行为
+      if (!this.isUserLogin()) {
         console.log('用户未登录，行为数据仅保存到本地')
         return
       }
       
       // 调用云函数记录行为数据
       wx.cloud.callFunction({
-        name: 'dataService',  // ✅ 更新：使用新的合并云函数
+        name: 'dataService',
         data: {
-          action: 'recordBehavior',  // ✅ 新增：指定操作类型
+          action: 'recordBehavior',
           data: behaviorData
         },
         success: (res) => {

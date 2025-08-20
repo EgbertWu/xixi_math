@@ -21,11 +21,11 @@
 
 | 集合名称 | 用途 | 主要字段 |
 |---------|------|----------|
-| `users` | 用户信息 | userId, userInfo, settings, achievements |
+| `users` | 用户信息 | openid, userInfo, settings, achievements |
 | `learning_sessions` | 学习会话 | sessionId, questionText, dialogue, status |
 | `learning_reports` | 学习报告 | sessionId, reportData, performance |
-| `user_behaviors` | 用户行为 | userId, action, data, timestamp |
-| `user_stats` | 用户统计 | userId, learningStats, pageViews |
+| `user_behaviors` | 用户行为 | openid, action, data, timestamp |
+| `user_stats` | 用户统计 | openid, learningStats, pageViews |
 
 ## 🚀 快速开始
 
@@ -98,7 +98,7 @@ CLOUD_ENV_ID=your_cloud_env_id
 ```javascript
 {
   imageBase64: "图片base64数据",
-  userId: "用户ID", 
+  openid: "用户ID", 
   sessionId: "会话ID",
   timestamp: "时间戳"
 }
@@ -131,7 +131,7 @@ CLOUD_ENV_ID=your_cloud_env_id
 ```javascript
 {
   sessionId: "会话ID",
-  userId: "用户ID",
+  openid: "用户ID",
   answer: "学生回答",
   currentRound: 1,
   timestamp: "时间戳"
@@ -161,7 +161,7 @@ CLOUD_ENV_ID=your_cloud_env_id
 ```javascript
 {
   sessionId: "会话ID",
-  userId: "用户ID",
+  openid: "用户ID",
   timestamp: "时间戳"
 }
 ```

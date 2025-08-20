@@ -541,3 +541,61 @@
     transform: translateY(-2rpx);
   }
 }
+
+/* 头像选择样式 */
+.avatar-section {
+  margin: 20rpx 0;
+}
+
+.section-label {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.avatar-btn {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  border: 2rpx dashed #ddd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8f8f8;
+  margin: 0;
+  padding: 0;
+}
+
+.temp-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 60rpx;
+}
+
+.avatar-hint {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 5rpx;
+}
+
+/* 昵称输入样式 */
+.nickname-section {
+  margin: 20rpx 0;
+}
+
+.nickname-input {
+  width: 100%;
+  height: 80rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 10rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.login-btn[disabled] {
+  background-color: #ccc !important;
+  color: #999 !important;
+}

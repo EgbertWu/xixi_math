@@ -122,7 +122,7 @@ Page({
     }
     
     // 检查用户是否登录
-    if (!app.globalData.userId) {
+    if (!app.globalData.openid) {
       app.showError('请先登录')
       wx.navigateBack()
       return
@@ -133,7 +133,7 @@ Page({
       name: 'getSession',
       data: {
         sessionId: this.data.sessionId,
-        userId: app.globalData.userId
+        openid: app.globalData.openid
       },
       success: (res) => {
         if (res.result && res.result.success) {
@@ -155,28 +155,85 @@ Page({
    * 加载已存在的会话（继续对话模式）
    */
   loadExistingSession() {
-    // 从本地存储获取学习历史
-    const learningHistory = wx.getStorageSync('learningHistory') || []
-    const existingSession = learningHistory.find(item => item.sessionId === this.data.sessionId)
-    
-    if (existingSession) {
-      this.setData({
-        sessionData: existingSession,
-        aiAnalysis: existingSession.aiAnalysis, // 添加AI分析数据
-        questionText: existingSession.questionText,
-        questionImage: existingSession.questionImage,
-        messages: existingSession.messages || [],
-        currentRound: existingSession.currentRound || 1,
-        isSessionComplete: existingSession.isComplete || false
-      })
-      
-      // 滚动到底部
-      setTimeout(() => {
-        this.scrollToBottom()
-      }, 100)
+    if (this.data.mode === 'history') {
+      // 历史查看模式，从云端获取完整会话数据
+      this.loadSessionFromCloud()
     } else {
-      app.showError('找不到对话记录')
+      // 继续学习模式，从本地存储获取
+      const learningHistory = wx.getStorageSync('learningHistory') || []
+      const existingSession = learningHistory.find(item => item.sessionId === this.data.sessionId)
+      
+      if (existingSession) {
+        this.setData({
+          sessionData: existingSession,
+          aiAnalysis: existingSession.aiAnalysis,
+          questionText: existingSession.questionText,
+          questionImage: existingSession.questionImage,
+          messages: existingSession.messages || [],
+          currentRound: existingSession.currentRound || 1,
+          isSessionComplete: existingSession.isComplete || false,
+          isHistoryMode: this.data.mode === 'history'
+        })
+        
+        setTimeout(() => {
+          this.scrollToBottom()
+        }, 100)
+      } else {
+        this.loadSessionFromCloud()
+      }
+    }
+  },
+
+  /**
+   * 从云端加载会话数据
+   */
+  async loadSessionFromCloud() {
+    if (!app.globalData.openid) {
+      app.showError('请先登录')
       wx.navigateBack()
+      return
+    }
+
+    wx.showLoading({ title: '加载中...' })
+
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'dataService',
+        data: {
+          action: 'getSessionData',
+          data: {
+            sessionId: this.data.sessionId,
+            openid: app.globalData.openid
+          }
+        }
+      })
+
+      if (result.result && result.result.success) {
+        const sessionData = result.result.data
+        
+        this.setData({
+          sessionData: sessionData,
+          aiAnalysis: sessionData.aiAnalysis,
+          questionText: sessionData.questionText,
+          questionImage: sessionData.questionImage,
+          messages: sessionData.dialogue || [],
+          currentRound: sessionData.currentRound || 1,
+          isSessionComplete: sessionData.isComplete || false,
+          isHistoryMode: this.data.mode === 'history'
+        })
+        
+        setTimeout(() => {
+          this.scrollToBottom()
+        }, 100)
+      } else {
+        throw new Error(result.result?.error || '加载会话失败')
+      }
+    } catch (error) {
+      console.error('从云端加载会话失败:', error)
+      app.showError('加载失败，请重试')
+      wx.navigateBack()
+    } finally {
+      wx.hideLoading()
     }
   },
 
@@ -326,7 +383,7 @@ Page({
    */
   processUserAnswer(userAnswer) {
     // 检查用户是否登录
-    if (!app.globalData.userId) {
+    if (!app.globalData.openid) {
       this.stopThinkingAnimation()
       app.showError('请先登录')
       wx.navigateBack()
@@ -339,7 +396,7 @@ Page({
         sessionId: this.data.sessionId,
         userAnswer: userAnswer,
         currentRound: this.data.currentRound,
-        userId: app.globalData.userId,
+        openid: app.globalData.openid,
         timestamp: new Date().toISOString()
       },
       success: (res) => {
@@ -361,16 +418,21 @@ Page({
   },
 
   /**
-   * 处理AI响应 - 优化版
+   * 处理AI响应 - 优化版（避免页面刷新）
    * @param {Object} responseData - AI响应数据
    */
   handleAIResponse(responseData) {
-    const { feedback, isCompleted, nextQuestion, currentRound } = responseData
+    const { feedback, isCompleted, nextQuestion, currentRound, answerCorrect } = responseData
     
     // 合并AI的完整回复（避免分段）
     let fullAIResponse = feedback
     if (nextQuestion && !isCompleted) {
       fullAIResponse += '\n\n' + nextQuestion
+    }
+    
+    // 如果学习完成且答案正确，添加查看报告的提示
+    if (isCompleted && answerCorrect) {
+      fullAIResponse += '\n\n🎉 恭喜你完成了学习！点击下方链接查看详细的学习报告。'
     }
     
     // 添加AI响应消息（单条完整消息）
@@ -380,47 +442,89 @@ Page({
       content: fullAIResponse,
       timestamp: new Date().toISOString(),
       round: this.data.currentRound,
-      isCompleted: isCompleted
+      isCompleted: isCompleted,
+      showReportLink: isCompleted && answerCorrect // 新增：是否显示报告链接
     }
     
     const newMessages = [...this.data.messages, aiMessage]
     
     if (isCompleted) {
-      // 会话完成
+      // 会话完成 - 移除自动弹窗逻辑
       this.setData({
         messages: newMessages,
         isSessionComplete: true,
-        inputPlaceholder: '学习已完成！点击查看报告'
+        inputPlaceholder: '学习已完成！',
+        scrollIntoView: `message-${newMessages.length - 1}`
       })
       
       // 自动保存到历史记录
       this.saveToHistory()
       
-      // 显示完成提示
-      setTimeout(() => {
-        wx.showModal({
-          title: '学习完成',
-          content: '恭喜完成学习！如有其他问题请重新拍照。',
-          showCancel: false,
-          confirmText: '查看报告',
-          success: () => {
-            this.goToResult()
-          }
-        })
-      }, 1000)
     } else {
       this.setData({
         messages: newMessages,
         currentRound: currentRound,
-        inputPlaceholder: `第${currentRound}轮：请输入你的想法...`
+        inputPlaceholder: `第${currentRound}轮：请输入你的想法...`,
+        scrollIntoView: `message-${newMessages.length - 1}`
       })
     }
-    
-    // 滚动到底部
-    setTimeout(() => {
-      this.scrollToBottom()
-    }, 100)
   },
+  
+  /**
+   * 滚动到消息底部 - 优化版（避免页面刷新）
+   */
+  scrollToBottom() {
+    // 只使用scroll-view的scroll-into-view属性，避免页面滚动
+    const messageCount = this.data.messages.length
+    if (messageCount > 0) {
+      this.setData({
+        scrollIntoView: `message-${messageCount - 1}`
+      })
+    }
+  },
+  
+  /**
+   * 发送用户回答 - 优化版
+   */
+  sendAnswer() {
+    const userInput = this.data.userInput.trim()
+    if (!userInput) {
+      app.showError('请输入你的回答')
+      return
+    }
+    
+    // 添加用户消息到对话列表
+    const userMessage = {
+      id: generateUniqueId(),
+      type: 'user',
+      content: userInput,
+      timestamp: new Date().toISOString(),
+      round: this.data.currentRound
+    }
+    
+    const newMessages = [...this.data.messages, userMessage]
+    
+    this.setData({
+      messages: newMessages,
+      userInput: '',
+      isAIThinking: true,
+      currentThinkingIndex: 0,
+      scrollIntoView: `message-${newMessages.length - 1}` // 修复：使用正确的变量名
+    })
+    
+    // 记录用户回答
+    app.trackUserBehavior('user_answer', {
+      sessionId: this.data.sessionId,
+      round: this.data.currentRound,
+      answerLength: userInput.length
+    })
+    
+    // 开始思考动画
+    this.startThinkingAnimation()
+    
+    // 发送到AI处理
+    this.processUserAnswer(userInput)
+  }, // ✅ 添加缺少的逗号
   
   /**
    * 返回首页
@@ -435,6 +539,9 @@ Page({
         if (res.confirm) {
           // 保存当前进度
           this.saveProgress()
+          
+          // 立即保存到历史记录
+          this.saveToHistory()
           
           app.trackUserBehavior('go_to_home', {
             sessionId: this.data.sessionId,
@@ -475,7 +582,7 @@ Page({
   },
 
   /**
-   * 滚动到消息底部 - 优化版
+   * 滚动到消息底部
    */
   scrollToBottom() {
     // 使用scroll-view的scroll-into-view属性更稳定
@@ -538,6 +645,7 @@ Page({
    * 退出学习
    */
   exitLearning() {
+    console.log('🚪 用户点击退出学习按钮')
     wx.showModal({
       title: '确认退出',
       content: '退出后当前学习进度将会保存，下次可以继续学习',
@@ -545,17 +653,38 @@ Page({
       cancelText: '继续学习',
       success: (res) => {
         if (res.confirm) {
-          // 保存当前进度
-          this.saveProgress()
-          
-          app.trackUserBehavior('exit_learning', {
-            sessionId: this.data.sessionId,
-            round: this.data.currentRound
-          })
-          
-          wx.navigateBack()
-        }
+        console.log('✅ 用户确认退出，开始保存数据...')
+        
+        // 保存当前进度
+        this.saveProgress()
+        
+        // 立即保存到历史记录
+        this.saveToHistory()
+        
+        app.trackUserBehavior('exit_learning', {
+          sessionId: this.data.sessionId,
+          round: this.data.currentRound
+        })
+        
+        console.log('🏠 跳转到首页...')
+        // 返回首页而不是上一页
+        wx.switchTab({
+          url: '/pages/index/index',
+          success: () => {
+            console.log('✅ 成功跳转到首页')
+          },
+          fail: (err) => {
+            console.error('❌ 跳转首页失败:', err)
+            // 如果switchTab失败，尝试redirectTo
+            wx.redirectTo({
+              url: '/pages/index/index'
+            })
+          }
+        })
+      } else {
+        console.log('❌ 用户取消退出')
       }
+    }
     })
   },
 
@@ -574,7 +703,7 @@ Page({
     wx.setStorageSync('learningProgress', progressData)
     
     // 检查用户是否登录
-    if (!app.globalData.userId) {
+    if (!app.globalData.openid) {
       console.log('用户未登录，仅保存到本地')
       return;
     }
@@ -586,7 +715,7 @@ Page({
         action: 'updateSessionProgress', // 新增：指定操作类型
         data: {
           sessionId: this.data.sessionId,
-          userId: app.globalData.userId,
+          openid: app.globalData.openid,
           dialogue: this.data.messages, // 修改：使用 dialogue 而不是 progressData
           currentRound: this.data.currentRound
         }
@@ -604,6 +733,15 @@ Page({
    * 保存到历史记录
    */
   saveToHistory() {
+    console.log('🔄 开始保存历史记录...')
+    console.log('📊 当前数据状态:', {
+      sessionId: this.data.sessionId,
+      questionText: this.data.questionText,
+      messagesCount: this.data.messages.length,
+      isComplete: this.data.isSessionComplete,
+      openid: app.globalData.openid
+    })
+    
     const historyItem = {
       sessionId: this.data.sessionId,
       questionText: this.data.questionText,
@@ -615,30 +753,44 @@ Page({
       summary: this.generateSummary()
     }
     
+    console.log('📝 准备保存的历史记录:', historyItem)
+    
     // 保存到本地历史记录
     let learningHistory = wx.getStorageSync('learningHistory') || []
+    console.log('📚 当前本地历史记录数量:', learningHistory.length)
     
     // 检查是否已存在，避免重复
     const existingIndex = learningHistory.findIndex(item => item.sessionId === this.data.sessionId)
     if (existingIndex >= 0) {
+      console.log('🔄 更新现有历史记录，索引:', existingIndex)
       learningHistory[existingIndex] = historyItem
     } else {
+      console.log('➕ 添加新的历史记录')
       learningHistory.unshift(historyItem) // 添加到开头
     }
     
     // 限制历史记录数量
     if (learningHistory.length > 50) {
       learningHistory = learningHistory.slice(0, 50)
+      console.log('✂️ 历史记录数量超限，已截取到50条')
     }
     
-    wx.setStorageSync('learningHistory', learningHistory)
+    try {
+      wx.setStorageSync('learningHistory', learningHistory)
+      console.log('✅ 本地历史记录保存成功，总数量:', learningHistory.length)
+    } catch (error) {
+      console.error('❌ 本地历史记录保存失败:', error)
+    }
     
     // 如果用户已登录，同步到云端
-    if (app.globalData.userId) {
+    if (app.globalData.openid) {
+      console.log('☁️ 用户已登录，开始同步到云端...')
       this.syncToCloud(historyItem)
+    } else {
+      console.log('⚠️ 用户未登录，跳过云端同步')
     }
   },
-  
+
   /**
    * 生成会话摘要
    */
@@ -667,7 +819,39 @@ Page({
   },
 
   /**
-   * 复制消息内容
+   * 显示消息操作按钮（长按触发）
+   * @param {Object} e - 事件对象
+   */
+  showMessageActions(e) {
+    const { id } = e.currentTarget.dataset
+    
+    // 触觉反馈
+    wx.vibrateShort({
+      type: 'light'
+    })
+    
+    this.setData({
+      currentActionMessageId: id
+    })
+    
+    // 记录用户行为
+    app.trackUserBehavior('show_message_actions', {
+      sessionId: this.data.sessionId,
+      messageId: id
+    })
+  },
+
+  /**
+   * 隐藏消息操作按钮
+   */
+  hideMessageActions() {
+    this.setData({
+      currentActionMessageId: null,
+    })
+  },
+
+  /**
+   * 复制消息内容 - 优化版
    * @param {Object} e - 事件对象
    */
   copyMessage(e) {
@@ -679,16 +863,21 @@ Page({
           title: '已复制到剪贴板',
           icon: 'success'
         })
+        // 隐藏操作按钮
+        this.hideMessageActions()
       }
     })
   },
 
   /**
-   * 编辑消息
+   * 编辑消息 - 优化版
    * @param {Object} e - 事件对象
    */
   editMessage(e) {
     const { id, content } = e.currentTarget.dataset
+    
+    // 先隐藏操作按钮
+    this.hideMessageActions()
     
     wx.showModal({
       title: '编辑回答',
@@ -704,11 +893,14 @@ Page({
   },
 
   /**
-   * 重新发送消息
+   * 重新发送消息 - 优化版
    * @param {Object} e - 事件对象
    */
   resendMessage(e) {
     const { id, content } = e.currentTarget.dataset
+    
+    // 先隐藏操作按钮
+    this.hideMessageActions()
     
     wx.showModal({
       title: '重新发送',
@@ -766,5 +958,256 @@ Page({
       
       this.saveProgress()
     }
+  },
+
+  /**
+   * 同步历史记录到云端
+   * @param {Object} historyItem - 历史记录项
+   */
+  syncToCloud(historyItem) {
+    console.log('☁️ 开始同步历史记录到云端...')
+    
+    // 详细检查openid状态
+    console.log('🔍 用户ID调试信息:')
+    console.log('  - app.globalData:', app.globalData)
+    console.log('  - app.globalData.openid:', app.globalData.openid)
+    console.log('  - openid类型:', typeof app.globalData.openid)
+    console.log('  - openid是否为空:', !app.globalData.openid)
+    
+    // 如果openid为空，尝试重新获取
+    if (!app.globalData.openid) {
+      console.warn('⚠️ openid为空，尝试重新获取用户信息...')
+      // 可以在这里调用app的登录方法重新获取openid
+      wx.showToast({
+        title: '用户信息丢失，请重新登录',
+        icon: 'error',
+        duration: 2000
+      })
+      return
+    }
+    
+    console.log('📤 发送数据:', {
+      action: 'saveLearningHistory',
+      openid: app.globalData.openid,
+      historyData: historyItem
+    })
+    
+    // 调用云函数保存学习历史
+    wx.cloud.callFunction({
+      name: 'dataService',
+      data: {
+        action: 'saveLearningHistory',
+        openid: app.globalData.openid,
+        historyData: historyItem
+      },
+      success: (res) => {
+        console.log('✅ 历史记录同步到云端成功:', res)
+        if (res.result) {
+          console.log('📊 云函数返回结果:', res.result)
+        }
+        wx.showToast({
+          title: '历史记录已保存',
+          icon: 'success',
+          duration: 1000
+        })
+      },
+      fail: (err) => {
+        console.error('❌ 历史记录同步到云端失败:', err)
+        console.error('❌ 错误详情:', {
+          errMsg: err.errMsg,
+          errCode: err.errCode,
+          result: err.result
+        })
+        wx.showToast({
+          title: '历史记录保存失败',
+          icon: 'error',
+          duration: 2000
+        })
+      }
+    })
+  },
+
+  /**
+   * 生成会话摘要
+   */
+  generateSummary() {
+    const questionText = this.data.questionText
+    if (questionText.length > 20) {
+      return questionText.substring(0, 20) + '...'
+    }
+    return questionText || '数学题解答'
+  },
+  
+  /**
+   * 页面卸载时清理资源 - 增强版
+   */
+  onUnload() {
+    // 清理定时器
+    this.stopThinkingAnimation()
+    
+    // 自动保存进度和历史记录
+    if (!this.data.isSessionComplete) {
+      this.saveProgress()
+    }
+    
+    // 总是保存到历史记录
+    this.saveToHistory()
+  },
+
+  /**
+   * 显示消息操作按钮（长按触发）
+   * @param {Object} e - 事件对象
+   */
+  showMessageActions(e) {
+    const { id } = e.currentTarget.dataset
+    
+    // 触觉反馈
+    wx.vibrateShort({
+      type: 'light'
+    })
+    
+    this.setData({
+      currentActionMessageId: id
+    })
+    
+    // 记录用户行为
+    app.trackUserBehavior('show_message_actions', {
+      sessionId: this.data.sessionId,
+      messageId: id
+    })
+  },
+
+  /**
+   * 隐藏消息操作按钮
+   */
+  hideMessageActions() {
+    this.setData({
+      currentActionMessageId: null,
+    })
+  },
+
+  /**
+   * 复制消息内容 - 优化版
+   * @param {Object} e - 事件对象
+   */
+  copyMessage(e) {
+    const content = e.currentTarget.dataset.content
+    wx.setClipboardData({
+      data: content,
+      success: () => {
+        wx.showToast({
+          title: '已复制到剪贴板',
+          icon: 'success'
+        })
+        // 隐藏操作按钮
+        this.hideMessageActions()
+      }
+    })
+  },
+
+  /**
+   * 编辑消息 - 优化版
+   * @param {Object} e - 事件对象
+   */
+  editMessage(e) {
+    const { id, content } = e.currentTarget.dataset
+    
+    // 先隐藏操作按钮
+    this.hideMessageActions()
+    
+    wx.showModal({
+      title: '编辑回答',
+      editable: true,
+      placeholderText: '请输入新的回答...',
+      content: content,
+      success: (res) => {
+        if (res.confirm && res.content.trim()) {
+          this.updateMessage(id, res.content.trim())
+        }
+      }
+    })
+  },
+
+  /**
+   * 重新发送消息 - 优化版
+   * @param {Object} e - 事件对象
+   */
+  resendMessage(e) {
+    const { id, content } = e.currentTarget.dataset
+    
+    // 先隐藏操作按钮
+    this.hideMessageActions()
+    
+    wx.showModal({
+      title: '重新发送',
+      content: `确定要重新发送这条消息吗？\n\n"${content}"`,
+      success: (res) => {
+        if (res.confirm) {
+          // 删除该消息之后的所有对话
+          this.rollbackToMessage(id)
+          // 重新发送
+          this.setData({ userInput: content })
+          this.sendAnswer()
+        }
+      }
+    })
+  },
+
+  /**
+   * 更新消息内容
+   * @param {string} messageId - 消息ID
+   * @param {string} newContent - 新内容
+   */
+  updateMessage(messageId, newContent) {
+    const messages = this.data.messages.map(msg => {
+      if (msg.id === messageId) {
+        return { ...msg, content: newContent, edited: true }
+      }
+      return msg
+    })
+    
+    this.setData({ messages })
+    this.saveProgress()
+    
+    wx.showToast({
+      title: '消息已更新',
+      icon: 'success'
+    })
+  },
+
+  /**
+   * 回退到指定消息
+   * @param {string} messageId - 消息ID
+   */
+  rollbackToMessage(messageId) {
+    const messageIndex = this.data.messages.findIndex(msg => msg.id === messageId)
+    if (messageIndex !== -1) {
+      const newMessages = this.data.messages.slice(0, messageIndex + 1)
+      const lastUserMessage = newMessages.filter(msg => msg.type === 'user').pop()
+      const currentRound = lastUserMessage ? lastUserMessage.round : 1
+      
+      this.setData({
+        messages: newMessages,
+        currentRound: currentRound,
+        isSessionComplete: false
+      })
+      
+      this.saveProgress()
+    }
+  },
+
+  /**
+   * 点击查看学习报告
+   * 用户主动点击查看报告链接时调用
+   */
+  onViewReportTap() {
+    // 记录用户行为
+    app.trackUserBehavior('view_report_clicked', {
+      sessionId: this.data.sessionId,
+      source: 'chat_link'
+    })
+    
+    // 跳转到结果页面
+    this.goToResult()
   }
 })

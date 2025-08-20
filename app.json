@@ -5,7 +5,8 @@
     "pages/learning/learning",
     "pages/result/result",
     "pages/profile/profile",
-    "pages/analysis/analysis"
+    "pages/analysis/analysis",
+    "pages/history/history"
   ],
   "window": {
     "backgroundTextStyle": "light",

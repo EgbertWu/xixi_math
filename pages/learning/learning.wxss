@@ -283,22 +283,94 @@
   border-right: 12rpx solid #E3F2FD;
 }
 
-/* 用户消息 */
-.user-message {
+/* 用户消息容器 */
+.user-message-container {
   margin-left: 80rpx;
+  margin-bottom: 32rpx;
+  position: relative;
 }
 
-.user-message .message-header {
+.user-message-container .message-header {
   flex-direction: row-reverse;
+  margin-bottom: 16rpx;
 }
 
-.user-message .sender-info {
+.user-message-container .sender-info {
   text-align: right;
+  margin-right: 20rpx;
 }
 
+/* 消息操作按钮 - 确保排列成一排 */
+.message-actions {
+  position: absolute;
+  top: -60rpx;
+  right: 0;
+  display: flex;
+  flex-direction: row; /* 确保水平排列 */
+  background: white;
+  border-radius: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.15);
+  padding: 8rpx;
+  z-index: 100;
+  animation: actionShow 0.3s ease-out;
+  /* 确保按钮不换行 */
+  white-space: nowrap;
+  min-width: 240rpx; /* 确保有足够空间容纳三个按钮 */
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 16rpx; /* 调整内边距使按钮更紧凑 */
+  border-radius: 20rpx;
+  transition: background-color 0.2s;
+  min-width: 60rpx; /* 确保按钮最小宽度 */
+  flex: 1; /* 平均分配空间 */
+  margin: 0 2rpx; /* 按钮间距 */
+}
+
+.action-btn:active {
+  background-color: #F5F5F5;
+}
+
+.action-icon {
+  width: 28rpx; /* 稍微缩小图标 */
+  height: 28rpx;
+  margin-bottom: 6rpx;
+}
+
+.action-text {
+  font-size: 18rpx; /* 稍微缩小文字 */
+  color: #666;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* 按钮激活状态颜色 */
+.copy-btn:active {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.edit-btn:active {
+  background-color: rgba(255, 152, 0, 0.1);
+}
+
+.resend-btn:active {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+/* 用户消息气泡样式 */
 .user-bubble {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  position: relative;
+  transition: transform 0.1s;
+}
+
+.user-bubble:active {
+  transform: scale(0.98);
 }
 
 .user-bubble::after {
@@ -802,4 +874,21 @@
   background: #667eea;
   color: white;
   border-color: #667eea;
+}
+
+/* 查看报告链接样式 */
+.report-link-container {
+  margin-top: 10rpx;
+  text-align: left;
+}
+
+.report-link {
+  color: #007AFF;
+  font-size: 28rpx;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.report-link:active {
+  opacity: 0.6;
 }

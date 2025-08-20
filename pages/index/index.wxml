@@ -76,4 +76,33 @@
       </view>
     </scroll-view>
   </view>
+  
+  <!-- 最近学习记录 -->
+  <view wx:if="{{hasRecentSessions}}" class="recent-section">
+    <view class="section-header">
+      <text class="section-title">最近学习</text>
+      <text class="view-all" bindtap="viewAllHistory">查看全部</text>
+    </view>
+    
+    <view class="recent-list">
+      <view 
+        wx:for="{{recentSessions}}" 
+        wx:key="sessionId" 
+        class="recent-item"
+        bindtap="onRecentSessionTap"
+        data-session="{{item}}"
+      >
+        <view class="recent-content">
+          <text class="recent-question">{{item.questionText || '数学题目'}}</text>
+          <view class="recent-meta">
+            <text class="recent-time">{{item.lastUpdateTime}}</text>
+            <view class="recent-status {{item.status}}">
+              {{item.status === 'completed' ? '已完成' : '未完成'}}
+            </view>
+          </view>
+        </view>
+        <view class="recent-arrow">></view>
+      </view>
+    </view>
+  </view>
 </view>

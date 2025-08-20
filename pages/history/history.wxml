@@ -1,0 +1,110 @@
+<!--pages/history/history.wxml-->
+<view class="history-container">
+  <!-- 顶部导航 -->
+  <view class="header">
+    <view class="header-content">
+      <text class="title">学习历史</text>
+      <view class="stats">
+        <text class="stat-item">总计 {{totalSessions}} 次</text>
+        <text class="stat-item">完成 {{completedSessions}} 次</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 筛选选项 -->
+  <view class="filter-bar">
+    <view class="filter-tabs">
+      <view 
+        class="filter-tab {{currentFilter === 'all' ? 'active' : ''}}"
+        bindtap="onFilterChange"
+        data-filter="all"
+      >
+        全部
+      </view>
+      <view 
+        class="filter-tab {{currentFilter === 'completed' ? 'active' : ''}}"
+        bindtap="onFilterChange"
+        data-filter="completed"
+      >
+        已完成
+      </view>
+      <view 
+        class="filter-tab {{currentFilter === 'incomplete' ? 'active' : ''}}"
+        bindtap="onFilterChange"
+        data-filter="incomplete"
+      >
+        未完成
+      </view>
+    </view>
+  </view>
+
+  <!-- 历史记录列表 -->
+  <scroll-view 
+    class="history-list" 
+    scroll-y="true"
+    bindscrolltolower="onLoadMore"
+    enable-back-to-top="true"
+  >
+    <view wx:if="{{loading && sessions.length === 0}}" class="loading-container">
+      <view class="loading-text">加载中...</view>
+    </view>
+    
+    <view wx:elif="{{sessions.length === 0}}" class="empty-container">
+      <image class="empty-icon" src="/images/empty-history.png" mode="aspectFit"></image>
+      <text class="empty-text">暂无学习记录</text>
+      <text class="empty-hint">开始拍照学习吧！</text>
+      <button class="start-learning-btn" bindtap="goToCamera">开始学习</button>
+    </view>
+    
+    <view wx:else>
+      <view 
+        wx:for="{{sessions}}" 
+        wx:key="sessionId" 
+        class="history-item"
+        bindtap="onSessionTap"
+        data-session="{{item}}"
+      >
+        <view class="session-header">
+          <view class="session-info">
+            <text class="question-preview">{{item.questionText || '数学题目'}}</text>
+            <view class="session-meta">
+              <text class="grade-level">{{item.gradeLevel || '小学'}}</text>
+              <text class="difficulty">难度 {{item.difficulty || 3}}</text>
+              <text class="time">{{item.lastUpdateTime}}</text>
+            </view>
+          </view>
+          <view class="session-status">
+            <view class="status-badge {{item.status === 'completed' ? 'completed' : 'incomplete'}}">
+              {{item.status === 'completed' ? '已完成' : '未完成'}}
+            </view>
+            <view wx:if="{{item.score}}" class="score">{{item.score}}分</view>
+          </view>
+        </view>
+        
+        <view class="session-progress">
+          <text class="progress-text">进度: {{item.currentRound || 1}}/{{item.maxRounds || 5}}</text>
+          <view class="progress-bar">
+            <view 
+              class="progress-fill" 
+              style="width: {{((item.currentRound || 1) / (item.maxRounds || 5)) * 100}}%"
+            ></view>
+          </view>
+        </view>
+        
+        <view wx:if="{{item.questionImage}}" class="question-image">
+          <image src="{{item.questionImage}}" mode="aspectFit" class="thumbnail"></image>
+        </view>
+      </view>
+      
+      <!-- 加载更多 -->
+      <view wx:if="{{hasMore}}" class="load-more">
+        <view wx:if="{{loadingMore}}" class="loading-text">加载更多...</view>
+        <button wx:else class="load-more-btn" bindtap="onLoadMore">加载更多</button>
+      </view>
+      
+      <view wx:if="{{!hasMore && sessions.length > 0}}" class="no-more">
+        <text class="no-more-text">没有更多记录了</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
