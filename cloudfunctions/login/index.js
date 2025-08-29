@@ -20,12 +20,6 @@ exports.main = async (event, context) => {
     // 获取微信调用上下文
     const wxContext = cloud.getWXContext()
     
-    console.log('用户登录请求:', {
-      openid: wxContext.OPENID,
-      appid: wxContext.APPID,
-      timestamp: new Date().toISOString()
-    })
-    
     // 返回用户身份信息
     return {
       success: true,

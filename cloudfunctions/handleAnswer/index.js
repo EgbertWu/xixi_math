@@ -28,8 +28,6 @@ const openai = new OpenAI({
  * @param {string} event.timestamp - 时间戳
  */
 exports.main = async (event, context) => {
-  console.log('handleAnswer 云函数开始执行', event)
-  
   try {
     const { sessionId, openid, userAnswer, currentRound, timestamp } = event
     
@@ -39,7 +37,6 @@ exports.main = async (event, context) => {
     }
     
     // 1. 获取会话数据 - 增强查询逻辑
-    console.log('获取会话数据...', { sessionId, openid })
     
     // 首先尝试精确匹配
     let sessionResult = await db.collection('learning_sessions')
@@ -51,17 +48,10 @@ exports.main = async (event, context) => {
     
     // 如果精确匹配失败，尝试只用sessionId查询（用于调试）
     if (sessionResult.data.length === 0) {
-      console.log('精确匹配失败，尝试只用sessionId查询...')
       const sessionOnlyResult = await db.collection('learning_sessions')
         .where({ sessionId: sessionId })
         .get()
       
-      console.log('sessionId查询结果:', sessionOnlyResult.data.map(item => ({
-        sessionId: item.sessionId,
-        openid: item.openid,
-        openidType: typeof item.openid,
-        openidLength: item.openid?.length
-      })))
       
       // 如果找到了会话但openid不匹配，返回详细错误信息
       if (sessionOnlyResult.data.length > 0) {
@@ -76,14 +66,8 @@ exports.main = async (event, context) => {
     }
     
     const sessionData = sessionResult.data[0]
-    console.log('会话数据获取成功:', {
-      sessionId: sessionData.sessionId,
-      openid: sessionData.openid,
-      questionText: sessionData.questionText?.substring(0, 50) + '...'
-    })
     
     // 2. 判断答案正确性
-    console.log('判断答案正确性...')
     const answerCheck = await checkAnswerCorrectness(userAnswer, sessionData.questionText, sessionData.aiAnalysis)
     
     let aiResult
@@ -92,7 +76,6 @@ exports.main = async (event, context) => {
     // 3. 根据答案正确性进行条件分支处理
     if (answerCheck.isCorrect) {
       // 答案正确：生成最终鼓励反馈
-      console.log('答案正确，生成最终鼓励反馈...')
       aiResult = await generateFinalEncouragementFeedback(
         sessionData.questionText,
         sessionData.aiAnalysis,
@@ -104,7 +87,6 @@ exports.main = async (event, context) => {
       isCompleted = true
     } else {
       // 答案错误：继续分析回答质量并提供指导
-      console.log('答案错误，分析回答质量并提供指导...')
       aiResult = await analyzeAnswerWithAI(
         sessionData.questionText,
         sessionData.aiAnalysis,
@@ -118,7 +100,6 @@ exports.main = async (event, context) => {
     
     // 增强错误处理：如果AI分析失败但有fallbackResponse，使用备用响应
     if (!aiResult.success && aiResult.fallbackResponse) {
-      console.log('AI分析失败，使用备用响应')
       aiResult.success = true
       aiResult.data = {
         feedback: aiResult.fallbackResponse.feedback,
@@ -152,7 +133,6 @@ exports.main = async (event, context) => {
     const nextRound = isCompleted ? currentRound : currentRound + 1
     
     // 5. 使用dataService更新会话进度
-    console.log('使用dataService更新会话进度...')
     const updateResult = await cloud.callFunction({
       name: 'dataService',
       data: {
@@ -182,7 +162,6 @@ exports.main = async (event, context) => {
     }
     
     // 6. 使用dataService记录用户行为
-    console.log('使用dataService记录用户行为...')
     const behaviorResult = await cloud.callFunction({
       name: 'dataService',
       data: {
@@ -209,7 +188,6 @@ exports.main = async (event, context) => {
       console.error('记录用户行为失败:', behaviorResult.result.error)
     }
     
-    console.log('handleAnswer 云函数执行成功')
     
     return {
       success: true,

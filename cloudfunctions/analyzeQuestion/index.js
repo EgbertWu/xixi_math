@@ -29,8 +29,6 @@ exports.main = async (event, context) => {
         error: '缺少图片数据'
       };
     }
-
-    console.log('开始分析图片，用户ID:', openid, '会话ID:', sessionId);
     
     // 直接使用Base64数据调用qwen-vl-max模型
     const analysisResult = await analyzeWithQwenVLMax(imageBase64);
@@ -96,7 +94,6 @@ async function saveSessionToDatabase(sessionData) {
     await db.collection('learning_sessions').add({
       data: sessionData
     });
-    console.log('会话数据保存成功');
   } catch (error) {
     console.error('保存会话数据失败:', error);
     throw error;
@@ -185,7 +182,6 @@ async function analyzeWithQwenVLMax(imageBase64) {
       baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     })
 
-    console.log('调用通义千问qwen-vl-max API...');
     
     // 构建智能提示词
     const systemPrompt = buildIntelligentPrompt();
@@ -217,8 +213,7 @@ async function analyzeWithQwenVLMax(imageBase64) {
       temperature: 0.8,
       response_format: { type: "json_object" }  // 强制JSON格式输出
     });
-    
-    console.log('qwen-vl-max原始响应:', completion.choices[0].message.content);
+  
     
     // 解析AI响应
     let analysisData;

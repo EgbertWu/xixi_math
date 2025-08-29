@@ -21,8 +21,6 @@ const db = cloud.database()
  * @param {string} event.endDate - 结束日期
  */
 exports.main = async (event, context) => {
-  console.log('getUserHistory 云函数开始执行', event)
-  
   try {
     const { 
       openid, 
@@ -65,7 +63,6 @@ exports.main = async (event, context) => {
         break
     }
     
-    console.log('getUserHistory 云函数执行成功')
     
     return {
       success: true,
