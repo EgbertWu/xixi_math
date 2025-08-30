@@ -1,0 +1,210 @@
+<!--数据库测试页面-->
+<!--用于提供可视化界面运行数据库测试-->
+<!--创建原因：让用户能够方便地测试数据库连接和查询learning_history记录-->
+
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="header">
+    <text class="title">数据库测试工具</text>
+    <text class="subtitle">用于调试learning_history记录查询问题</text>
+  </view>
+
+  <!-- 测试按钮区域 -->
+  <view class="button-section">
+    <button 
+      class="test-btn full-test" 
+      bindtap="runFullTest" 
+      disabled="{{isLoading}}"
+    >
+      {{isLoading ? '测试中...' : '运行完整测试'}}
+    </button>
+    
+    <view class="button-row">
+      <button 
+        class="test-btn history-test" 
+        bindtap="testLearningHistoryOnly" 
+        disabled="{{isLoading}}"
+      >
+        测试learning_history
+      </button>
+      
+      <button 
+        class="test-btn sessions-test" 
+        bindtap="testLearningSessionsOnly" 
+        disabled="{{isLoading}}"
+      >
+        测试learning_sessions
+      </button>
+    </view>
+    
+    <view class="button-row">
+      <button 
+        class="test-btn clear-btn" 
+        bindtap="clearResults" 
+        disabled="{{isLoading}}"
+      >
+        清除结果
+      </button>
+      
+      <button 
+        class="test-btn home-btn" 
+        bindtap="goHome"
+      >
+        返回首页
+      </button>
+    </view>
+    
+    <!-- 修复验证按钮 -->
+    <view class="button-row">
+      <button 
+        class="test-btn fix-verify-btn" 
+        bindtap="goToFixVerification"
+        disabled="{{isLoading}}"
+      >
+        🔧 修复验证
+      </button>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{isLoading}}">
+    <view class="loading-icon"></view>
+    <text>正在运行测试...</text>
+  </view>
+
+  <!-- 测试日志 -->
+  <view class="log-section" wx:if="{{testLog.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">测试日志</text>
+      <button class="copy-btn" bindtap="copyLogs">复制日志</button>
+    </view>
+    
+    <scroll-view class="log-container" scroll-y="true">
+      <view class="log-item" wx:for="{{testLog}}" wx:key="index">
+        <text class="log-text">{{item}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 测试结果 -->
+  <view class="results-section" wx:if="{{testResults}}">
+    <view class="section-header">
+      <text class="section-title">测试结果</text>
+      <button class="copy-btn" bindtap="copyResults">复制结果</button>
+    </view>
+
+    <!-- OpenID信息 -->
+    <view class="result-card">
+      <view class="card-title">用户信息</view>
+      <view class="info-item">
+        <text class="info-label">OpenID:</text>
+        <text class="info-value">{{testResults.openid || '未获取'}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">测试时间:</text>
+        <text class="info-value">{{testResults.timestamp}}</text>
+      </view>
+    </view>
+
+    <!-- Learning History结果 -->
+    <view class="result-card" wx:if="{{testResults.learningHistory}}">
+      <view class="card-title">
+        <text>Learning History 集合</text>
+        <view class="status-badge {{testResults.learningHistory.success ? 'success' : 'error'}}">
+          {{testResults.learningHistory.success ? '成功' : '失败'}}
+        </view>
+      </view>
+      
+      <view class="info-item" wx:if="{{testResults.learningHistory.success}}">
+        <text class="info-label">用户数据条数:</text>
+        <text class="info-value">{{testResults.learningHistory.userDataCount}}</text>
+      </view>
+      
+      <view class="info-item" wx:if="{{testResults.learningHistory.success}}">
+        <text class="info-label">总数据条数:</text>
+        <text class="info-value">{{testResults.learningHistory.totalDataCount}}</text>
+      </view>
+      
+      <view class="error-info" wx:if="{{!testResults.learningHistory.success}}">
+        <text class="error-text">错误: {{testResults.learningHistory.error}}</text>
+      </view>
+    </view>
+
+    <!-- Learning Sessions结果 -->
+    <view class="result-card" wx:if="{{testResults.learningSessions}}">
+      <view class="card-title">
+        <text>Learning Sessions 集合</text>
+        <view class="status-badge {{testResults.learningSessions.success ? 'success' : 'error'}}">
+          {{testResults.learningSessions.success ? '成功' : '失败'}}
+        </view>
+      </view>
+      
+      <view class="info-item" wx:if="{{testResults.learningSessions.success}}">
+        <text class="info-label">用户数据条数:</text>
+        <text class="info-value">{{testResults.learningSessions.userDataCount}}</text>
+      </view>
+      
+      <view class="info-item" wx:if="{{testResults.learningSessions.success}}">
+        <text class="info-label">总数据条数:</text>
+        <text class="info-value">{{testResults.learningSessions.totalDataCount}}</text>
+      </view>
+      
+      <view class="error-info" wx:if="{{!testResults.learningSessions.success}}">
+        <text class="error-text">错误: {{testResults.learningSessions.error}}</text>
+      </view>
+    </view>
+
+    <!-- 云函数测试结果 -->
+    <view class="result-card" wx:if="{{testResults.cloudFunctions}}">
+      <view class="card-title">云函数测试</view>
+      
+      <view class="cloud-function-item" wx:if="{{testResults.cloudFunctions.dataService}}">
+        <text class="function-name">dataService:</text>
+        <text class="function-result">
+          {{testResults.cloudFunctions.dataService.error ? '失败 - ' + testResults.cloudFunctions.dataService.error : '成功'}}
+        </text>
+      </view>
+      
+      <view class="cloud-function-item" wx:if="{{testResults.cloudFunctions.getUserHistory}}">
+        <text class="function-name">getUserHistory:</text>
+        <text class="function-result">
+          {{testResults.cloudFunctions.getUserHistory.error ? '失败 - ' + testResults.cloudFunctions.getUserHistory.error : '成功'}}
+        </text>
+      </view>
+    </view>
+
+    <!-- 建议信息 -->
+    <view class="suggestion-card">
+      <view class="card-title">建议</view>
+      
+      <view wx:if="{{testResults.learningHistory && testResults.learningHistory.success && testResults.learningHistory.userDataCount > 0}}">
+        <text class="suggestion-text success">✅ 建议使用 learning_history 集合，已有 {{testResults.learningHistory.userDataCount}} 条用户数据</text>
+      </view>
+      
+      <view wx:elif="{{testResults.learningSessions && testResults.learningSessions.success && testResults.learningSessions.userDataCount > 0}}">
+        <text class="suggestion-text success">✅ 建议使用 learning_sessions 集合，已有 {{testResults.learningSessions.userDataCount}} 条用户数据</text>
+      </view>
+      
+      <view wx:else>
+        <text class="suggestion-text warning">⚠️ 两个集合都没有用户数据，可能需要先创建学习记录</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="help-section">
+    <view class="section-title">使用说明</view>
+    <view class="help-item">
+      <text class="help-text">1. 点击"运行完整测试"进行全面的数据库测试</text>
+    </view>
+    <view class="help-item">
+      <text class="help-text">2. 可以单独测试特定的数据库集合</text>
+    </view>
+    <view class="help-item">
+      <text class="help-text">3. 查看测试日志了解详细的执行过程</text>
+    </view>
+    <view class="help-item">
+      <text class="help-text">4. 根据建议选择合适的数据库集合</text>
+    </view>
+  </view>
+</view>

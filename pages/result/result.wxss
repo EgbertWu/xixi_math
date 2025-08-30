@@ -57,7 +57,7 @@
 .top-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* 修改：从 space-between 改为 center 实现标题居中 */
   padding: 60rpx 0 20rpx;
   margin-bottom: 30rpx;
   color: white;
@@ -414,7 +414,7 @@
 /* 操作按钮 */
 .action-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 20rpx;
   margin: 40rpx 0;
 }
@@ -430,27 +430,31 @@
   font-weight: bold;
   border: none;
   transition: all 0.3s;
+  flex: 1;
 }
 
+/* 绿色主题 */
+/* 主要按钮样式 - 使用绿色主题 */
 .action-btn.primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg,rgb(231, 237, 234),rgb(200, 241, 217));
+  color:rgb(66, 97, 238);
+  box-shadow: 0 8rpx 24rpx rgba(100, 208, 145, 0.4);
 }
 
 .action-btn.primary:active {
   transform: translateY(2rpx);
-  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4rpx 12rpx rgba(46, 204, 113, 0.4);
 }
 
 .action-btn.secondary {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
   color: #667eea;
-  border: 2rpx solid #667eea;
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10rpx);
 }
 
 .action-btn.secondary:active {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .action-btn .iconfont {

@@ -6,7 +6,9 @@
     "pages/result/result",
     "pages/profile/profile",
     "pages/analysis/analysis",
-    "pages/history/history"
+    "pages/history/history",
+    "pages/test/test",
+    "pages/test/fix-verification"
   ],
   "window": {
     "backgroundTextStyle": "light",

@@ -1,5 +1,6 @@
 <!--pages/result/result.wxml-->
 <!-- 希希数学小助手 学习结果页面模板 -->
+<!-- 修改原因：删除历史记录模式相关代码，统一显示综合学习报告，简化页面结构 -->
 
 <view class="result-container">
   <!-- 加载状态 -->
@@ -12,96 +13,17 @@
     <text class="loading-text">{{loadingText}}</text>
   </view>
 
-  <!-- 学习历史模式 -->
-  <view wx:elif="{{mode === 'history'}}" class="history-content">
-    <!-- 顶部导航 -->
-    <view class="top-nav">
-      <view class="nav-left" bindtap="goHome">
-        <text class="iconfont icon-back"></text>
-        <text>返回</text>
-      </view>
-      <view class="nav-title">学习报告</view>
-      <view class="nav-right"></view>
-    </view>
-
-    <!-- 历史统计概览 -->
-    <view wx:if="{{historyList.length > 0}}" class="history-stats">
-      <view class="stats-item">
-        <text class="stats-number">{{historyList.length}}</text>
-        <text class="stats-label">学习次数</text>
-      </view>
-      <view class="stats-item">
-        <text class="stats-number">{{historyStats.completedCount}}</text>
-        <text class="stats-label">完成次数</text>
-      </view>
-      <view class="stats-item">
-        <text class="stats-number">{{historyStats.avgScore}}</text>
-        <text class="stats-label">平均分</text>
-      </view>
-    </view>
-
-    <!-- 历史记录列表 -->
-    <view wx:if="{{historyList.length > 0}}" class="history-list">
-      <view wx:for="{{historyList}}" wx:key="id" class="history-item" bindtap="onHistoryItemTap" data-item="{{item}}">
-        <view class="history-main">
-          <view class="history-question">
-            <text class="question-preview">{{item.questionPreview}}</text>
-          </view>
-          
-          <view class="history-info">
-            <view class="info-row">
-              <view class="status-badge status-{{item.status}}">
-                <text>{{item.statusText}}</text>
-              </view>
-              <text class="history-time">{{item.timeText}}</text>
-            </view>
-            
-            <view wx:if="{{item.score !== null}}" class="info-row">
-              <text class="score-text">得分：{{item.score}}/100</text>
-              <text class="duration-text">用时：{{item.duration}}分钟</text>
-            </view>
-          </view>
-        </view>
-        
-        <view class="history-arrow">
-          <text class="iconfont icon-arrow-right"></text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 空状态 -->
-    <view wx:else class="empty-history">
-      <view class="empty-icon">
-        <text class="iconfont icon-history"></text>
-      </view>
-      <text class="empty-title">暂无学习记录</text>
-      <text class="empty-desc">开始你的第一次学习吧！</text>
-      <button class="start-learning-btn" bindtap="goHome">
-        <text class="iconfont icon-camera"></text>
-        <text>开始学习</text>
-      </button>
-    </view>
-  </view>
-
   <!-- 报告内容 -->
   <view wx:else class="report-content">
     <!-- 顶部导航 -->
     <view class="top-nav">
-      <view class="nav-left" bindtap="goHome">
-        <text class="iconfont icon-back"></text>
-        <text>返回</text>
-      </view>
       <view class="nav-title">学习报告</view>
-      <view class="nav-right" bindtap="shareResult">
-        <text class="iconfont icon-share"></text>
-        <text>分享</text>
-      </view>
     </view>
 
     <!-- 成绩概览卡片 -->
     <view class="score-card">
       <view class="score-header">
-        <text class="score-title">学习完成！</text>
+        <text class="score-title">报告汇总</text>
         <view class="score-badge score-{{reportData.performance.level}}">
           <text>{{reportData.performance.level}}</text>
         </view>
@@ -109,18 +31,17 @@
       
       <view class="score-main">
         <view class="score-circle">
-          <view class="score-number">{{reportData.performance.score}}</view>
-          <view class="score-total">/100</view>
+          <view class="score-level">{{reportData.performance.level}}</view>
         </view>
         
         <view class="score-details">
           <view class="detail-item">
             <text class="detail-label">学习时长</text>
-            <text class="detail-value">{{reportData.totalTime}}分钟</text>
+            <text class="detail-value">{{reportData.totalLearningTime}}分钟</text>
           </view>
           <view class="detail-item">
-            <text class="detail-label">完成轮次</text>
-            <text class="detail-value">{{reportData.completedRounds}}/{{reportData.totalRounds}}</text>
+            <text class="detail-label">完成题目</text>
+            <text class="detail-value">{{reportData.completedSessions}}</text>
           </view>
         </view>
       </view>
@@ -130,10 +51,10 @@
     <view class="question-review">
       <view class="section-title">
         <text class="iconfont icon-wenhao"></text>
-        <text>题目回顾</text>
+        <text>最长会话</text>
       </view>
       <view class="question-content">
-        <text>{{reportData.questionText}}</text>
+        <text>{{reportData.longestSession.questionText}}</text>
       </view>
     </view>
 
@@ -240,15 +161,16 @@
 
     <!-- 学习建议 -->
     <view wx:if="{{reportData.suggestions.length > 0}}" class="suggestions-section">
-      <view class="section-title" bindtap="viewDetailAnalysis" data-type="suggestions">
+      <view class="section-title">
         <text class="iconfont icon-lightbulb"></text>
         <text>学习建议</text>
-        <text class="iconfont icon-arrow-right"></text>
       </view>
       
-      <view class="suggestion-preview">
-        <text class="suggestion-text">{{reportData.suggestions[0]}}</text>
-        <text wx:if="{{reportData.suggestions.length > 1}}" class="more-text">等{{reportData.suggestions.length}}条建议</text>
+      <view class="suggestions-list">
+        <view wx:for="{{reportData.suggestions}}" wx:key="index" class="next-step-item">
+          <view class="step-number">{{index + 1}}</view>
+          <text class="step-text">{{item}}</text>
+        </view>
       </view>
     </view>
 
@@ -271,17 +193,11 @@
     <view class="action-buttons">
       <button class="action-btn primary" bindtap="continueNewLearning">
         <text class="iconfont icon-camera"></text>
-        <text>继续学习</text>
+        <text>继续解题</text>
       </button>
-      
-      <button class="action-btn secondary" bindtap="viewLearningHistory">
-        <text class="iconfont icon-history"></text>
-        <text>学习历史</text>
-      </button>
-      
-      <button class="action-btn secondary" bindtap="saveReportToAlbum">
-        <text class="iconfont icon-save"></text>
-        <text>保存报告</text>
+      <button class="action-btn primary" bindtap="saveReportToAlbum">
+        <text class="iconfont icon-share"></text>
+        <text>分享报告</text>
       </button>
     </view>
 

@@ -41,15 +41,15 @@
     <view class="stats-grid">
       <view class="stat-item">
         <text class="stat-label">已解题数</text>
-        <text class="stat-number">{{stats.totalQuestions || 0}}</text>
+        <text class="stat-number">{{stats.totalQuestions}}</text>
       </view>
       <view class="stat-item">
         <text class="stat-label">学习时间</text>
-        <text class="stat-number">{{stats.learningTime || '0h 0m'}}</text>
+        <text class="stat-number">{{stats.learningTime}}</text>
       </view>
       <view class="stat-item">
-        <text class="stat-label">准确率</text>
-        <text class="stat-number accuracy">{{stats.accuracy || '0%'}}</text>
+        <text class="stat-label">最新成就</text>
+        <text class="stat-number achievement">{{stats.latestAchievement}}</text>
       </view>
     </view>
   </view>
@@ -102,6 +102,27 @@
           </view>
         </view>
         <view class="recent-arrow">></view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 开发者工具区域 (仅在开发环境显示) -->
+  <view wx:if="{{isDevelopment}}" class="developer-section">
+    <view class="section-title">
+      <text class="iconfont icon-tool icon-xlarge icon-warning"></text>
+      <text class="title">开发者工具</text>
+    </view>
+    
+    <view class="developer-tools">
+      <view class="tool-item" bindtap="goToTest">
+        <view class="tool-icon">
+          <text class="iconfont icon-database"></text>
+        </view>
+        <view class="tool-content">
+          <text class="tool-title">数据库测试</text>
+          <text class="tool-desc">测试learning_history数据库连接和查询</text>
+        </view>
+        <view class="tool-arrow">></view>
       </view>
     </view>
   </view>

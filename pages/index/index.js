@@ -11,11 +11,12 @@ Page({
     stats: {
       totalQuestions: 0,
       learningTime: '0h 0m',
-      accuracy: '0%'
+      latestAchievement: '暂无成就'
     },
     historyItems: [],
     recentSessions: [], // 最近的学习记录
-    hasRecentSessions: false
+    hasRecentSessions: false,
+    isDevelopment: true // 开发环境标识，生产环境应设为false
   },
 
   /**
@@ -33,67 +34,106 @@ Page({
     // 先设置默认数据，确保页面能快速显示
     this.setDefaultData();
     
-    // 如果用户已登录，再异步加载云端数据
-    if (app.globalData.userInfo) {
+    // 检查openid状态
+    if (app.globalData.openid) {
+      console.log('已有openid，加载用户数据:', app.globalData.openid);
       this.loadUserStats();
     } else {
-      // 未登录用户使用本地数据
-      this.loadLocalStats();
+      console.log('没有openid，等待获取...');
+      // 等待一段时间后重试，因为getOpenId是异步的
+      setTimeout(() => {
+        if (app.globalData.openid) {
+          console.log('延迟获取到openid，加载用户数据:', app.globalData.openid);
+          this.loadUserStats();
+        } else {
+          console.log('仍然没有openid，加载本地数据');
+          this.loadLocalStats();
+          // 不再调用loadLocalHistory，设置空历史记录
+          this.setData({ historyItems: [] });
+        }
+      }, 1000); // 等待1秒
     }
   },
 
   /**
-   * 设置默认数据
+   * 加载用户统计数据（仅登录用户）
+   * 修改原因：使用updateUserStats云函数替代直接查询数据库，解决权限问题并确保数据统计准确性
    */
+  async loadUserStats() {
+    if (!app.globalData.openid) {
+      console.log('loadUserStats: 没有openid');
+      this.loadLocalStats();
+      this.setData({ historyItems: [] });
+      return;
+    }
+  
+    try {
+      console.log('loadUserStats: 开始加载，openid:', app.globalData.openid);
+      
+      const result = await wx.cloud.callFunction({
+        name: 'updateUserStats',
+        data: {
+          openid: app.globalData.openid
+        }
+      });
+      
+      console.log('updateUserStats云函数返回结果:', result);
+      console.log('result.result:', result.result);
+      console.log('result.result.data:', result.result.data);
+      if (result.result && result.result.data) {
+        console.log('result.result.data.stats:', result.result.data.stats);
+      }
+
+      let userStats = {
+        totalQuestions: 0,
+        learningTime: '0h 0m',
+        latestAchievement: '暂无成就'
+      };
+      
+      if (result && result.result && result.result.success && result.result.data && result.result.data.stats) {
+        const statsData = result.result.data.stats;
+        console.log('解析到的statsData:', statsData);
+        console.log('statsData.totalQuestions:', statsData.totalQuestions);
+        console.log('statsData.learningTime:', statsData.learningTime);
+        console.log('statsData.latestAchievement:', statsData.latestAchievement);
+        
+        userStats = {
+          totalQuestions: statsData.totalQuestions || 0,
+          learningTime: this.formatLearningTime(statsData.learningTime || 0),
+          latestAchievement: statsData.latestAchievement || '暂无成就'
+        };
+        console.log('构建的userStats:', userStats);
+      } else {
+        console.log('条件检查失败:');
+        console.log('result存在:', !!result);
+        console.log('result.result存在:', !!(result && result.result));
+        console.log('result.result.success:', result && result.result && result.result.success);
+        console.log('result.result.data存在:', !!(result && result.result && result.result.data));
+        console.log('result.result.data.stats存在:', !!(result && result.result && result.result.data && result.result.data.stats));
+      }
+      
+      console.log('最终设置的userStats:', userStats);
+      this.setData({
+        stats: userStats
+      });
+      
+      await this.loadLearningHistory();
+    } catch (error) {
+      console.error('加载用户统计数据失败:', error);
+      this.loadLocalStats();
+      this.setData({ historyItems: [] });
+    }
+  },
+
   setDefaultData() {
     this.setData({
       stats: {
         totalQuestions: 0,
         learningTime: '0h 0m',
-        accuracy: '0%'
+        latestAchievement: '暂无成就'  // 修改：将accuracy改为latestAchievement
       },
       historyItems: []
     });
-  },
-
-  /**
-   * 加载用户统计数据（仅登录用户）
-   */
-  async loadUserStats() {
-    // 只有登录用户才访问数据库
-    if (!app.globalData.userInfo) {
-      this.loadLocalStats();
-      return;
-    }
-
-    try {
-      // 从云数据库获取用户统计数据
-      const db = wx.cloud.database();
-      const userStatsResult = await db.collection('user_stats').where({
-        _openid: '{openid}'
-      }).get();
-      
-      let userStats = {
-        totalQuestions: 0,
-        learningTime: '0h 0m',
-        accuracy: '0%'
-      };
-      
-      if (userStatsResult.data.length > 0) {
-        userStats = userStatsResult.data[0];
-      }
-      
-      this.setData({
-        stats: userStats
-      });
-      
-      // 加载解题历史记录
-      await this.loadLearningHistory();
-    } catch (error) {
-      console.error('加载用户统计数据失败:', error);
-      // 降级到本地存储
-      this.loadLocalStats();
-    }
   },
 
   /**
@@ -114,48 +154,58 @@ Page({
   },
 
   /**
-   * 加载学习历史记录（仅登录用户）
+   * 加载学习历史记录（使用云函数访问）
    */
   async loadLearningHistory() {
-    // 只有登录用户才访问数据库
-    if (!app.globalData.userInfo) {
-      this.loadLocalHistory();
+    // 检查用户是否有openid
+    if (!app.globalData.openid) {
+      console.log('用户openid不存在，无法加载历史记录');
+      this.setData({ historyItems: [] });
       return;
     }
     
     try {
-      // 从云数据库获取学习历史
-      const db = wx.cloud.database();
-      const historyResult = await db.collection('learning_sessions')
-        .where({
-          _openid: '{openid}'
-        })
-        .orderBy('updateTime', 'desc')
-        .limit(4)
-        .get();
+      console.log('开始加载历史记录，openid:', app.globalData.openid);
       
-      const recentHistory = historyResult.data.map(item => {
-        return {
-          id: item._id,
+      // 修复：使用getUserHistory云函数替代直接查询数据库
+      // 原因：数据库权限设置为"仅创建者可读写"，小程序端无法直接访问
+      const result = await wx.cloud.callFunction({
+        name: 'getUserHistory',
+        data: {
+          openid: app.globalData.openid,
+          page: 1,
+          pageSize: 4,
+          type: 'sessions'
+        }
+      });
+      
+      console.log('云函数查询结果:', result);
+      
+      let recentHistory = [];
+      if (result.result && result.result.success && result.result.data.sessions) {
+        // 处理learning_sessions数据
+        recentHistory = result.result.data.sessions.map(item => ({
+          id: item.sessionId,
           title: item.questionText || '数学题解答',
-          image: item.questionImage || '',
-          timestamp: item.updateTime,
+          image: '', // learning_sessions中没有图片字段
+          timestamp: item.startTime,
           sessionId: item.sessionId
-        };
-      });
+        }));
+      }
       
-      this.setData({
-        historyItems: recentHistory
-      });
+      console.log('处理后的历史记录:', recentHistory);
+      
+      this.setData({ historyItems: recentHistory });
+      
     } catch (error) {
       console.error('加载学习历史失败:', error);
-      // 降级到本地存储
-      this.loadLocalHistory();
+      this.setData({ historyItems: [] });
     }
   },
 
   /**
-   * 加载本地历史记录（降级方案）
+   * 删除原来的loadLocalHistory函数，因为不再需要本地存储降级
+   * 现在统一从云数据库获取数据
    */
   loadLocalHistory() {
     const historyList = wx.getStorageSync('learningHistory') || [];
@@ -327,39 +377,57 @@ Page({
   /**
    * 加载最近的学习记录
    */
+  /**
+   * 加载最近学习记录（使用getUserHistory云函数）
+   */
   async loadRecentSessions() {
     if (!app.globalData.openid) {
       return
     }
 
     try {
+      // 修复：使用getUserHistory云函数替代dataService
+      // 原因：dataService云函数存在错误，而getUserHistory能正常工作
       const result = await wx.cloud.callFunction({
-        name: 'dataService',
+        name: 'getUserHistory',
         data: {
-          action: 'getRecentLearningHistory',
-          data: {
-            openid: app.globalData.openid,
-            limit: 3
-          }
+          openid: app.globalData.openid,
+          page: 1,
+          pageSize: 3,
+          type: 'sessions'
         }
       })
 
-      if (result.result && result.result.success) {
-        const { recentSessions } = result.result.data
+      if (result.result && result.result.success && result.result.data.sessions) {
+        const sessions = result.result.data.sessions
         
-        // 格式化时间
-        const formattedSessions = recentSessions.map(session => ({
-          ...session,
-          lastUpdateTime: this.formatTime(session.lastUpdateTime)
+        // 格式化时间和数据结构
+        const formattedSessions = sessions.map(session => ({
+          sessionId: session.sessionId,
+          questionText: session.questionText || '数学题解答',
+          startTime: session.startTime,
+          lastUpdateTime: this.formatTime(session.startTime), // 使用startTime作为显示时间
+          status: session.status,
+          progress: session.progress
         }))
         
         this.setData({
           recentSessions: formattedSessions,
           hasRecentSessions: formattedSessions.length > 0
         })
+      } else {
+        // 如果没有数据，设置为空
+        this.setData({
+          recentSessions: [],
+          hasRecentSessions: false
+        })
       }
     } catch (error) {
       console.error('加载最近学习记录失败:', error)
+      this.setData({
+        recentSessions: [],
+        hasRecentSessions: false
+      })
     }
   },
 
@@ -414,6 +482,27 @@ Page({
       month: 'short',
       day: 'numeric'
     })
+  },
+
+  /**
+   * 格式化学习时长（分钟转换为小时分钟格式）
+   * 修改原因：云函数返回的学习时长是分钟数，需要转换为用户友好的显示格式
+   */
+  formatLearningTime(minutes) {
+    if (!minutes || minutes === 0) {
+      return '0h 0m'
+    }
+    
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    
+    if (hours === 0) {
+      return `${remainingMinutes}m`
+    } else if (remainingMinutes === 0) {
+      return `${hours}h`
+    } else {
+      return `${hours}h ${remainingMinutes}m`
+    }
   },
 
   /**
@@ -498,5 +587,34 @@ Page({
   onShow() {
     // 页面显示时刷新数据，但不直接访问数据库
     this.initPageData();
+  },
+
+  /**
+   * 跳转到数据库测试页面
+   * 仅在开发环境下可用
+   */
+  goToTest() {
+    if (!this.data.isDevelopment) {
+      wx.showToast({
+        title: '该功能仅在开发环境可用',
+        icon: 'none'
+      });
+      return;
+    }
+
+    console.log('跳转到数据库测试页面');
+    wx.navigateTo({
+      url: '/pages/test/test',
+      success: () => {
+        console.log('成功跳转到测试页面');
+      },
+      fail: (error) => {
+        console.error('跳转测试页面失败:', error);
+        wx.showToast({
+          title: '跳转失败',
+          icon: 'error'
+        });
+      }
+    });
   }
 });

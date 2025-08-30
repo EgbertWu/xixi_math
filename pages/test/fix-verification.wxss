@@ -1,0 +1,232 @@
+/* 修复验证测试页面样式 */
+
+.container {
+  padding: 20rpx;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.header {
+  text-align: center;
+  margin-bottom: 30rpx;
+  padding: 30rpx 20rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20rpx;
+  color: white;
+}
+
+.title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  display: block;
+  font-size: 28rpx;
+  opacity: 0.9;
+}
+
+/* 操作按钮区域 */
+.action-section {
+  margin-bottom: 30rpx;
+}
+
+.verify-btn {
+  width: 100%;
+  height: 80rpx;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border: none;
+  border-radius: 40rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  box-shadow: 0 8rpx 20rpx rgba(79, 172, 254, 0.3);
+}
+
+.verify-btn[disabled] {
+  background: #cccccc;
+  box-shadow: none;
+}
+
+.button-group {
+  display: flex;
+  gap: 20rpx;
+}
+
+.secondary-btn {
+  flex: 1;
+  height: 60rpx;
+  background: white;
+  color: #666;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 30rpx;
+  font-size: 28rpx;
+}
+
+/* 测试结果概览 */
+.results-overview {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.overview-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.result-value {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.result-value.success {
+  color: #52c41a;
+}
+
+.result-value.error {
+  color: #ff4d4f;
+}
+
+.result-value.warning {
+  color: #faad14;
+}
+
+/* 测试日志 */
+.log-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.log-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.log-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.log-count {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 10rpx;
+}
+
+.log-container {
+  height: 400rpx;
+  background: #f8f9fa;
+  border-radius: 10rpx;
+  padding: 20rpx;
+}
+
+.log-item {
+  margin-bottom: 10rpx;
+  padding: 10rpx;
+  background: white;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #4facfe;
+}
+
+.log-text {
+  font-size: 26rpx;
+  color: #333;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.log-empty {
+  text-align: center;
+  padding: 60rpx 20rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 导航按钮 */
+.navigation-section {
+  margin-bottom: 30rpx;
+}
+
+.nav-btn {
+  width: 100%;
+  height: 70rpx;
+  border-radius: 35rpx;
+  font-size: 30rpx;
+  margin-bottom: 15rpx;
+}
+
+.nav-btn.primary {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  color: white;
+  border: none;
+}
+
+.nav-btn.secondary {
+  background: white;
+  color: #666;
+  border: 2rpx solid #e0e0e0;
+}
+
+/* 使用说明 */
+.help-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.help-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.help-text {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+  padding: 8rpx 0;
+}

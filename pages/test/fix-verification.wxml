@@ -1,0 +1,96 @@
+<!--修复验证测试页面-->
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="header">
+    <text class="title">🔧 首页历史记录修复验证</text>
+    <text class="subtitle">验证数据库权限问题修复是否有效</text>
+  </view>
+
+  <!-- 操作按钮区域 -->
+  <view class="action-section">
+    <button 
+      class="verify-btn" 
+      bindtap="verifyHistoryFix" 
+      loading="{{isLoading}}"
+      disabled="{{isLoading}}"
+    >
+      {{isLoading ? '验证中...' : '🚀 开始验证修复'}}
+    </button>
+    
+    <view class="button-group">
+      <button class="secondary-btn" bindtap="clearLog">清除日志</button>
+      <button class="secondary-btn" bindtap="copyLog">复制日志</button>
+    </view>
+  </view>
+
+  <!-- 测试结果概览 -->
+  <view class="results-overview" wx:if="{{testResults.openid}}">
+    <view class="overview-title">📊 验证结果概览</view>
+    
+    <view class="result-item">
+      <text class="result-label">用户ID:</text>
+      <text class="result-value">{{testResults.openid}}</text>
+    </view>
+    
+    <view class="result-item">
+      <text class="result-label">云函数状态:</text>
+      <text class="result-value {{testResults.cloudFunction ? 'success' : 'error'}}">
+        {{testResults.cloudFunction ? '✅ 正常' : '❌ 异常'}}
+      </text>
+    </view>
+    
+    <view class="result-item">
+      <text class="result-label">历史记录:</text>
+      <text class="result-value {{testResults.historyCount > 0 ? 'success' : 'warning'}}">
+        {{testResults.historyCount}}条
+      </text>
+    </view>
+    
+    <view class="result-item">
+      <text class="result-label">最近记录:</text>
+      <text class="result-value {{testResults.recentCount > 0 ? 'success' : 'warning'}}">
+        {{testResults.recentCount}}条
+      </text>
+    </view>
+  </view>
+
+  <!-- 测试日志 -->
+  <view class="log-section">
+    <view class="log-header">
+      <text class="log-title">📋 验证日志</text>
+      <text class="log-count">({{testLog.length}}条)</text>
+    </view>
+    
+    <scroll-view class="log-container" scroll-y="true">
+      <view class="log-item" wx:for="{{testLog}}" wx:key="index">
+        <text class="log-text">{{item}}</text>
+      </view>
+      
+      <view class="log-empty" wx:if="{{testLog.length === 0}}">
+        <text class="empty-text">暂无日志，点击上方按钮开始验证</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 导航按钮 -->
+  <view class="navigation-section">
+    <button class="nav-btn primary" bindtap="goToHomePage">
+      🏠 前往首页验证
+    </button>
+    
+    <button class="nav-btn secondary" bindtap="goBack">
+      ← 返回测试页面
+    </button>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="help-section">
+    <view class="help-title">💡 使用说明</view>
+    <view class="help-content">
+      <text class="help-text">1. 点击"开始验证修复"按钮测试修复效果</text>
+      <text class="help-text">2. 查看验证日志了解详细过程</text>
+      <text class="help-text">3. 如果验证成功，前往首页查看历史记录</text>
+      <text class="help-text">4. 如果没有数据，先进行一次学习对话</text>
+    </view>
+  </view>
+</view>

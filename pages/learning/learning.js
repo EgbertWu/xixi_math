@@ -432,7 +432,7 @@ Page({
     
     // 如果学习完成且答案正确，添加查看报告的提示
     if (isCompleted && answerCorrect) {
-      fullAIResponse += '\n\n🎉 恭喜你完成了学习！点击下方链接查看详细的学习报告。'
+      fullAIResponse += '\n\n🎉 恭喜完成了解题！点击下方链接查看详细的学习报告。'
     }
     
     // 添加AI响应消息（单条完整消息）
@@ -459,15 +459,17 @@ Page({
       
       // 自动保存到历史记录
       this.saveToHistory()
-      
+
     } else {
-      this.setData({
-        messages: newMessages,
-        currentRound: currentRound,
-        inputPlaceholder: `第${currentRound}轮：请输入你的想法...`,
-        scrollIntoView: `message-${newMessages.length - 1}`
-      })
-    }
+    this.setData({
+      messages: newMessages,
+      currentRound: currentRound,
+      inputPlaceholder: `第${currentRound}轮：请输入你的想法...`,
+      scrollIntoView: `message-${newMessages.length - 1}`
+    })
+    
+    this.saveProgress()
+  }
   },
   
   /**
@@ -605,10 +607,11 @@ Page({
 
   /**
    * 跳转到结果页面
+   * 修改原因：改为跳转到综合报告页面，不再传递sessionId
    */
   goToResult() {
     wx.redirectTo({
-      url: `/pages/result/result?sessionId=${this.data.sessionId}`
+      url: `/pages/result/result?mode=userReport`
     })
   },
 
@@ -716,7 +719,7 @@ Page({
         data: {
           sessionId: this.data.sessionId,
           openid: app.globalData.openid,
-          dialogue: this.data.messages, // 修改：使用 dialogue 而不是 progressData
+          dialogue: this.data.messages,
           currentRound: this.data.currentRound
         }
       },
@@ -743,15 +746,15 @@ Page({
     })
     
     const historyItem = {
-      sessionId: this.data.sessionId,
-      questionText: this.data.questionText,
-      questionImage: this.data.questionImage,
-      messages: this.data.messages,
-      timestamp: new Date().toISOString(),
-      isComplete: this.data.isSessionComplete,
-      currentRound: this.data.currentRound,
-      summary: this.generateSummary()
-    }
+  sessionId: this.data.sessionId,
+  questionText: this.data.questionText,
+  questionImage: this.data.questionImage,
+  messages: this.data.messages,
+  timestamp: new Date().toISOString(),
+  status: this.data.isSessionComplete ? 'completed' : 'active', // ✅ 统一使用status
+  currentRound: this.data.currentRound,
+  summary: this.generateSummary()
+}
     
     console.log('📝 准备保存的历史记录:', historyItem)
     

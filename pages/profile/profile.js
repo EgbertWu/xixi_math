@@ -190,6 +190,7 @@ Page({
 
   /**
    * 从云端同步用户数据
+   * 修改原因：调用updateUserStats云函数获取最新的学习统计数据
    */
   syncUserDataFromCloud() {
     // 检查用户是否登录
@@ -198,47 +199,48 @@ Page({
       return;
     }
     
+    // 调用updateUserStats云函数获取统计数据
     wx.cloud.callFunction({
-      name: 'getUserHistory',
+      name: 'updateUserStats',
       data: {
-        oepnid: app.globalData.oepnid
+        openid: app.globalData.openid
       },
       success: (res) => {
-        console.log('用户数据同步成功', res)
+        console.log('用户统计数据同步成功', res)
         
         if (res.result && res.result.success) {
-          const cloudData = res.result.data
+          const stats = res.result.data.stats
           
-          // 更新学习统计
-          if (cloudData.learningStats) {
-            this.setData({
-              learningStats: {
-                ...this.data.learningStats,
-                ...cloudData.learningStats
-              }
-            })
-          }
+          // 更新学习统计数据
+          this.setData({
+            learningStats: {
+              totalQuestions: stats.totalQuestions || 0,
+              completedSessions: stats.completedSessions || 0,
+              learningTime: stats.learningTime || 0,
+              averageScore: stats.averageScore || 0,
+              streak: stats.streak || 0,
+              totalDays: stats.totalDays || 0
+            }
+          })
           
-          // 更新成就数据
-          if (cloudData.achievements) {
-            this.updateAchievements(cloudData.achievements)
-          }
+          // 根据统计数据更新成就进度
+          this.updateAchievementsProgress(stats)
           
-          // 更新设置
-          if (cloudData.settings) {
-            this.setData({
-              settings: {
-                ...this.data.settings,
-                ...cloudData.settings
-              }
-            })
-          }
+          // 更新菜单徽章
+          this.updateMenuBadges()
+          
+          console.log('学习统计数据更新完成:', this.data.learningStats)
         }
         
         this.setData({ isLoading: false })
       },
       fail: (err) => {
-        console.error('用户数据同步失败', err)
+        console.error('用户统计数据同步失败', err)
+        // 降级到本地数据
+        const localStats = wx.getStorageSync('learningStats')
+        if (localStats) {
+          this.setData({ learningStats: localStats })
+        }
         this.setData({ isLoading: false })
       }
     })
@@ -269,6 +271,68 @@ Page({
     
     // 更新菜单徽章
     this.updateMenuBadges()
+  },
+
+  /**
+   * 根据统计数据更新成就进度
+   * 修改原因：根据最新的学习统计数据更新成就解锁状态和进度
+   * @param {Object} stats - 学习统计数据
+   */
+  updateAchievementsProgress(stats) {
+    const achievements = this.data.achievements.map(achievement => {
+      let progress = 0
+      let unlocked = false
+      
+      switch (achievement.id) {
+        case 'first_question':
+          progress = Math.min(stats.totalQuestions, achievement.target)
+          unlocked = stats.totalQuestions >= achievement.target
+          break
+          
+        case 'ten_questions':
+          progress = Math.min(stats.totalQuestions, achievement.target)
+          unlocked = stats.totalQuestions >= achievement.target
+          break
+          
+        case 'perfect_score':
+          progress = stats.averageScore >= 100 ? 1 : 0
+          unlocked = stats.averageScore >= 100
+          break
+          
+        case 'week_streak':
+          progress = Math.min(stats.streak, achievement.target)
+          unlocked = stats.streak >= achievement.target
+          break
+          
+        case 'hour_learning':
+          progress = Math.min(stats.learningTime, achievement.target)
+          unlocked = stats.learningTime >= achievement.target
+          break
+          
+        default:
+          progress = achievement.progress
+          unlocked = achievement.unlocked
+      }
+      
+      return {
+        ...achievement,
+        progress,
+        unlocked
+      }
+    })
+    
+    // 过滤已解锁的成就
+    const unlockedAchievements = achievements.filter(item => item.unlocked)
+    
+    this.setData({
+      achievements,
+      unlockedAchievements
+    })
+    
+    console.log('成就进度更新完成:', {
+      total: achievements.length,
+      unlocked: unlockedAchievements.length
+    })
   },
 
   /**

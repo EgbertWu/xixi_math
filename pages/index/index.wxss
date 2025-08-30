@@ -279,3 +279,128 @@ page {
     gap: 15rpx;
   }
 }
+
+/* 开发者工具区域样式 */
+.developer-section {
+  margin: 30rpx 20rpx 20rpx;
+  padding: 25rpx;
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-radius: 20rpx;
+  border-left: 6rpx solid #f39c12;
+  box-shadow: 0 4rpx 20rpx rgba(243, 156, 18, 0.1);
+}
+
+.developer-section .section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding-bottom: 15rpx;
+  border-bottom: 2rpx solid rgba(243, 156, 18, 0.2);
+}
+
+.developer-section .section-title .title {
+  color: #d68910;
+  font-weight: bold;
+  font-size: 32rpx;
+}
+
+.developer-section .iconfont {
+  color: #f39c12;
+  margin-right: 15rpx;
+}
+
+.developer-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.tool-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background: white;
+  border-radius: 15rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 2rpx solid transparent;
+}
+
+.tool-item:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 1rpx 5rpx rgba(0, 0, 0, 0.1);
+  border-color: #f39c12;
+}
+
+.tool-icon {
+  width: 80rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  border-radius: 15rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+
+.tool-icon .iconfont {
+  color: white;
+  font-size: 36rpx;
+  margin: 0;
+}
+
+.tool-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 8rpx;
+}
+
+.tool-desc {
+  font-size: 24rpx;
+  color: #7f8c8d;
+  line-height: 1.4;
+}
+
+.tool-arrow {
+  color: #bdc3c7;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-left: 15rpx;
+}
+
+/* 开发者工具响应式设计 */
+@media (max-width: 375px) {
+  .developer-section {
+    margin: 20rpx 15rpx 15rpx;
+    padding: 20rpx;
+  }
+  
+  .tool-item {
+    padding: 15rpx;
+  }
+  
+  .tool-icon {
+    width: 70rpx;
+    height: 70rpx;
+    margin-right: 15rpx;
+  }
+  
+  .tool-icon .iconfont {
+    font-size: 32rpx;
+  }
+  
+  .tool-title {
+    font-size: 28rpx;
+  }
+  
+  .tool-desc {
+    font-size: 22rpx;
+  }
+}

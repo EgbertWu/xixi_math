@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "数据库测试工具",
+  "navigationBarBackgroundColor": "#667eea",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#f5f5f5",
+  "enablePullDownRefresh": false,
+  "disableScroll": false
+}

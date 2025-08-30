@@ -1,0 +1,366 @@
+/* 数据库测试页面样式 */
+/* 创建原因：为数据库测试工具提供美观和易用的界面样式 */
+
+.container {
+  padding: 20rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.header {
+  text-align: center;
+  margin-bottom: 40rpx;
+  padding: 30rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20rpx;
+  color: white;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  opacity: 0.9;
+  display: block;
+}
+
+/* 按钮区域 */
+.button-section {
+  margin-bottom: 40rpx;
+}
+
+.test-btn {
+  margin: 10rpx 0;
+  border-radius: 15rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  border: none;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.test-btn:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+}
+
+.full-test {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  height: 80rpx;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin: 20rpx 0;
+}
+
+.button-row .test-btn {
+  flex: 1;
+  height: 70rpx;
+  margin: 0;
+}
+
+.history-test {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+}
+
+.sessions-test {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+}
+
+.clear-btn {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #333;
+}
+
+.home-btn {
+  background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);
+  color: #333;
+}
+
+.fix-verify-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: bold;
+  width: 100%;
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx;
+  background: white;
+  border-radius: 20rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.loading-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid #f3f3f3;
+  border-top: 6rpx solid #4facfe;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading text {
+  color: #666;
+  font-size: 28rpx;
+}
+
+/* 通用区域样式 */
+.log-section,
+.results-section {
+  margin-bottom: 40rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding: 0 10rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.copy-btn {
+  background: #4facfe;
+  color: white;
+  border: none;
+  border-radius: 10rpx;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(79, 172, 254, 0.3);
+}
+
+/* 日志区域 */
+.log-container {
+  background: #2d3748;
+  border-radius: 15rpx;
+  padding: 20rpx;
+  max-height: 400rpx;
+  font-family: 'Courier New', monospace;
+}
+
+.log-item {
+  margin-bottom: 8rpx;
+}
+
+.log-text {
+  color: #e2e8f0;
+  font-size: 24rpx;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* 结果卡片 */
+.result-card,
+.suggestion-card {
+  background: white;
+  border-radius: 15rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border-left: 6rpx solid #4facfe;
+}
+
+.suggestion-card {
+  border-left-color: #48bb78;
+}
+
+.card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2d3748;
+  margin-bottom: 20rpx;
+  padding-bottom: 15rpx;
+  border-bottom: 2rpx solid #e2e8f0;
+}
+
+.status-badge {
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.status-badge.success {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.status-badge.error {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15rpx;
+  padding: 10rpx 0;
+}
+
+.info-label {
+  font-size: 28rpx;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 28rpx;
+  color: #2d3748;
+  font-weight: 600;
+  max-width: 60%;
+  text-align: right;
+  word-break: break-all;
+}
+
+.error-info {
+  background: #fed7d7;
+  border-radius: 10rpx;
+  padding: 15rpx;
+  margin-top: 10rpx;
+}
+
+.error-text {
+  color: #742a2a;
+  font-size: 26rpx;
+  line-height: 1.4;
+}
+
+.cloud-function-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15rpx;
+  padding: 15rpx;
+  background: #f7fafc;
+  border-radius: 10rpx;
+}
+
+.function-name {
+  font-size: 28rpx;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.function-result {
+  font-size: 26rpx;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.suggestion-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  display: block;
+}
+
+.suggestion-text.success {
+  color: #22543d;
+}
+
+.suggestion-text.warning {
+  color: #d69e2e;
+}
+
+/* 帮助区域 */
+.help-section {
+  background: white;
+  border-radius: 15rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border-left: 6rpx solid #ed8936;
+}
+
+.help-item {
+  margin-bottom: 15rpx;
+}
+
+.help-text {
+  font-size: 26rpx;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .container {
+    padding: 15rpx;
+  }
+  
+  .button-row {
+    flex-direction: column;
+    gap: 10rpx;
+  }
+  
+  .button-row .test-btn {
+    width: 100%;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10rpx;
+  }
+  
+  .copy-btn {
+    align-self: flex-end;
+  }
+}
+
+/* 禁用状态 */
+.test-btn[disabled] {
+  opacity: 0.6;
+  transform: none !important;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8rpx;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10rpx;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10rpx;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
