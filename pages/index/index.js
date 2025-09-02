@@ -16,7 +16,7 @@ Page({
     historyItems: [],
     recentSessions: [], // 最近的学习记录
     hasRecentSessions: false,
-    isDevelopment: true // 开发环境标识，生产环境应设为false
+    isDevelopment: false // 开发环境标识，生产环境应设为false
   },
 
   /**

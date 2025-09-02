@@ -39,6 +39,9 @@ exports.main = async (event, context) => {
     // 2. 更新或创建user_stats记录
     const updateResult = await updateUserStatsRecord(openid, stats)
     
+    // 3. 同步更新users表中的learningStats字段
+    await syncLearningStatsToUsers(openid, stats)
+    
     return {
       success: true,
       data: {
@@ -56,6 +59,50 @@ exports.main = async (event, context) => {
       error: error.message,
       code: 'FUNCTION_ERROR'
     }
+  }
+}
+
+/**
+ * 同步学习统计数据到users表
+ * 修改原因：确保users表中的learningStats与user_stats表保持同步
+ * @param {string} openid - 用户openid
+ * @param {Object} stats - 学习统计数据
+ */
+async function syncLearningStatsToUsers(openid, stats) {
+  try {
+    // 构建要更新到users表的learningStats数据
+    const learningStatsForUsers = {
+      totalQuestions: stats.totalQuestions || 0,
+      completedSessions: stats.completedSessions || 0,
+      totalLearningTime: stats.learningTime || 0,
+      averageScore: stats.averageScore || 0,
+      bestScore: stats.bestScore || 0,
+      currentStreak: stats.streak || 0,
+      longestStreak: stats.longestStreak || 0,
+      updateTime: new Date().toISOString()
+    }
+    
+    // 检查users表中是否存在该用户
+    try {
+      await db.collection('users').doc(openid).update({
+        data: {
+          'learningStats': learningStatsForUsers
+        }
+      })
+      console.log(`成功同步学习统计数据到users表: ${openid}`)
+    } catch (updateError) {
+      // 如果用户不存在，记录日志但不抛出错误
+      if (updateError.errCode === -1) {
+        console.log(`用户 ${openid} 在users表中不存在，跳过同步learningStats`)
+      } else {
+        console.error('同步learningStats到users表失败:', updateError)
+        throw updateError
+      }
+    }
+    
+  } catch (error) {
+    console.error('syncLearningStatsToUsers执行失败:', error)
+    throw error
   }
 }
 

@@ -22,7 +22,8 @@
         <view class="user-details">
           <text class="user-name">{{userInfo.nickName}}</text>
           <text class="user-id">ID: {{userInfo.openid || '希希数学小助手用户'}}</text>
-          <view class="user-level">
+          <!-- 暂时隐藏学习等级，等有更好的计算方法后再启用 -->
+          <view class="user-level" wx:if="{{false}}">
             <text class="level-text">学习等级 Lv.{{Math.floor(learningStats.totalQuestions / 5) + 1}}</text>
             <view class="level-progress">
               <view class="progress-bar">
