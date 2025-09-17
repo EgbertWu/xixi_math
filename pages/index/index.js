@@ -1,5 +1,5 @@
 // pages/index/index.js
-// 希希数学小助手 首页逻辑
+// 希希学习小助手 首页逻辑
 
 const app = getApp()
 
@@ -23,7 +23,7 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-    console.log('希希数学小助手首页加载');
+    console.log('希希学习小助手首页加载');
     this.initPageData();
   },
 
@@ -167,14 +167,15 @@ Page({
     try {
       console.log('开始加载历史记录，openid:', app.globalData.openid);
       
-      // 修复：使用getUserHistory云函数替代直接查询数据库
-      // 原因：数据库权限设置为"仅创建者可读写"，小程序端无法直接访问
+      // 添加加载状态提示
+      wx.showLoading({ title: '加载中...' });
+      
       const result = await wx.cloud.callFunction({
         name: 'getUserHistory',
         data: {
           openid: app.globalData.openid,
           page: 1,
-          pageSize: 4,
+          pageSize: 2, // 只显示最新2条
           type: 'sessions'
         }
       });
@@ -191,15 +192,31 @@ Page({
           timestamp: item.startTime,
           sessionId: item.sessionId
         }));
+        
+        console.log('✅ 成功获取历史记录:', recentHistory.length, '条');
+      } else {
+        console.log('⚠️ 未获取到历史记录数据');
+        // 添加用户提示
+        if (result.result && !result.result.success) {
+          wx.showToast({
+            title: result.result.error || '获取记录失败',
+            icon: 'none'
+          });
+        }
       }
       
       console.log('处理后的历史记录:', recentHistory);
-      
       this.setData({ historyItems: recentHistory });
       
     } catch (error) {
       console.error('加载学习历史失败:', error);
       this.setData({ historyItems: [] });
+      wx.showToast({
+        title: '加载失败，请重试',
+        icon: 'error'
+      });
+    } finally {
+      wx.hideLoading();
     }
   },
 
@@ -291,13 +308,95 @@ Page({
   },
 
   /**
-   * 打开学习会话
+   * 打开学习会话 - 修复版本
+   * 改动原因：currentTarget没有status字段，需要通过sessionId查询获取会话状态
    */
-  openLearningSession(e) {
+  async openLearningSession(e) {
+    console.log('🔍 点击历史记录项:', e);
+    
     const sessionId = e.currentTarget.dataset.sessionId;
-    if (sessionId) {
+    console.log('📝 获取到sessionId:', sessionId);
+    
+    if (!sessionId) {
+      console.error('❌ 未获取到sessionId');
+      wx.showToast({
+        title: '记录信息错误',
+        icon: 'error'
+      });
+      return;
+    }
+  
+    try {
+      // 显示加载提示
+      wx.showLoading({ title: '加载中...' });
+      
+      // 先检查recentSessions中是否有该会话数据
+      let sessionStatus = 'continue'; // 默认为继续模式
+      const recentSession = this.data.recentSessions.find(session => session.sessionId === sessionId);
+      
+      if (recentSession && recentSession.status) {
+        // 如果在最近会话中找到了状态信息
+        sessionStatus = recentSession.status === 'completed' ? 'history' : 'continue';
+        console.log('📋 从最近会话中获取状态:', recentSession.status, '-> mode:', sessionStatus);
+      } else {
+        // 如果最近会话中没有，调用云函数查询
+        console.log('🔍 从云端查询会话状态...');
+        const result = await wx.cloud.callFunction({
+          name: 'getUserHistory',
+          data: {
+            openid: app.globalData.openid,
+            sessionId: sessionId, // 查询特定会话
+            type: 'sessions'
+          }
+        });
+        
+        if (result.result && result.result.success && result.result.data.sessions && result.result.data.sessions.length > 0) {
+          const session = result.result.data.sessions[0];
+          sessionStatus = session.status === 'completed' ? 'history' : 'continue';
+          console.log('☁️ 从云端获取状态:', session.status, '-> mode:', sessionStatus);
+        } else {
+          console.log('⚠️ 未找到会话状态，使用默认continue模式');
+        }
+      }
+      
+      wx.hideLoading();
+      
+      // 根据会话状态决定模式
+      const mode = sessionStatus;
+      const url = `/pages/learning/learning?sessionId=${sessionId}&mode=${mode}`;
+      
+      console.log('🚀 跳转到学习页面:', url);
+      
       wx.navigateTo({
-        url: `/pages/learning/learning?sessionId=${sessionId}&mode=continue`
+        url: url,
+        success: () => {
+          console.log('✅ 页面跳转成功');
+        },
+        fail: (error) => {
+          console.error('❌ 页面跳转失败:', error);
+          wx.showToast({
+            title: '跳转失败',
+            icon: 'error'
+          });
+        }
+      });
+      
+    } catch (error) {
+      wx.hideLoading();
+      console.error('❌ 获取会话状态失败:', error);
+      
+      // 发生错误时使用默认的continue模式
+      const url = `/pages/learning/learning?sessionId=${sessionId}&mode=continue`;
+      console.log('🔄 使用默认模式跳转:', url);
+      
+      wx.navigateTo({
+        url: url,
+        fail: (error) => {
+          wx.showToast({
+            title: '跳转失败',
+            icon: 'error'
+          });
+        }
       });
     }
   },
@@ -309,7 +408,7 @@ Page({
     try {
       const db = wx.cloud.database();
       const userStatsResult = await db.collection('user_stats').where({
-        _openid: '{openid}'
+        openid: '{openid}'
       }).get();
       
       if (userStatsResult.data.length > 0) {
@@ -453,12 +552,11 @@ Page({
   /**
    * 查看全部历史记录
    */
-  viewAllHistory() {
+   goToHistoryPage() {
     wx.navigateTo({
       url: '/pages/history/history'
-    })
+    });
   },
-
   /**
    * 格式化时间
    */
@@ -504,19 +602,6 @@ Page({
       return `${hours}h ${remainingMinutes}m`
     }
   },
-
-  /**
-   * 打开学习会话
-   */
-  openLearningSession(e) {
-    const sessionId = e.currentTarget.dataset.sessionId;
-    if (sessionId) {
-      wx.navigateTo({
-        url: `/pages/learning/learning?sessionId=${sessionId}&mode=continue`
-      });
-    }
-  },
-
   /**
    * 更新用户统计数据到云数据库
    */

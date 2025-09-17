@@ -1,5 +1,5 @@
 // pages/profile/profile.js
-// 希希数学小助手 个人资料页面逻辑
+// 希希学习小助手 个人资料页面逻辑
 
 const app = getApp()
 
@@ -110,7 +110,7 @@ Page({
         id: 'about',
         name: '关于我们',
         icon: 'icon-brain',
-        desc: '希希数学小助手介绍',
+        desc: '希希学习小助手介绍',
         badge: ''
       },
       {
@@ -683,7 +683,7 @@ Page({
   openFeedback() {
     wx.showModal({
       title: '意见反馈',
-      content: '感谢您使用希希数学小助手！\n\n如有任何建议或问题，请通过以下方式联系我们：\n\n• 微信群：希希数学小助手用户交流群\n• 邮箱：feedback@希希数学小助手.com\n• 电话：400-123-4567',
+      content: '感谢您使用希希学习小助手！\n\n如有任何建议或问题，请通过以下方式联系我们：\n\n• 微信群：希希学习小助手用户交流群\n• 邮箱：feedback@希希学习小助手.com\n• 电话：400-123-4567',
       showCancel: false,
       confirmText: '我知道了'
     })
@@ -694,8 +694,8 @@ Page({
    */
   showAbout() {
     wx.showModal({
-      title: '关于希希数学小助手',
-      content: '希希数学小助手 v1.0.0\n\n基于AI的智能数学辅导助手，采用引导式教学法，通过启发式提问帮助学生独立思考和解决问题。\n\n© 2024 希希数学小助手 Team\n保留所有权利',
+      title: '关于希希学习小助手',
+      content: '希希学习小助手 v1.0.0\n\n基于AI的智能数学辅导助手，采用引导式教学法，通过启发式提问帮助学生独立思考和解决问题。\n\n© 2024 希希学习小助手 Team\n保留所有权利',
       showCancel: false,
       confirmText: '我知道了'
     })
@@ -710,7 +710,7 @@ Page({
     })
     
     return {
-      title: '希希数学小助手 - AI数学辅导助手',
+      title: '希希学习小助手 - AI数学辅导助手',
       path: '/pages/index/index',
       imageUrl: '/images/share-app.png'
     }
@@ -721,8 +721,119 @@ Page({
    */
   onShareTimeline() {
     return {
-      title: '希希数学小助手 - AI数学辅导助手，让学习更有趣！',
+      title: '希希学习小助手 - AI数学辅导助手，让学习更有趣！',
       imageUrl: '/images/share-timeline.png'
+    }
+  },
+  /**
+   * 保存分享图片到相册
+   * 修改原因：新增保存图片功能，配合分享使用
+   */
+  saveShareImage() {
+    // 显示操作菜单
+    wx.showActionSheet({
+      itemList: ['分享给朋友', '保存图片'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          // 触发分享
+          wx.showShareMenu({
+            withShareTicket: true
+          })
+        } else if (res.tapIndex === 1) {
+          // 保存图片
+          this.downloadAndSaveImage()
+        }
+      }
+    })
+  },
+
+  /**
+   * 下载并保存学习报告图片到本地相册
+   * 从云端获取生成的学习报告图片并保存到用户相册
+   */
+  downloadAndSaveImage() {
+    wx.showLoading({ title: '保存报告中...' })
+    
+    // 首先调用云函数生成学习报告图片
+    wx.cloud.callFunction({
+      name: 'generateLearningReport',
+      data: {
+        userId: this.data.userInfo.openid,
+        stats: this.data.learningStats
+      },
+      success: (res) => {
+        if (res.result.success && res.result.imageUrl) {
+          // 下载生成的报告图片
+          wx.downloadFile({
+            url: res.result.imageUrl, // 云端生成的图片URL
+            success: (downloadRes) => {
+              if (downloadRes.statusCode === 200) {
+                // 保存到相册
+                wx.saveImageToPhotosAlbum({
+                  filePath: downloadRes.tempFilePath,
+                  success: () => {
+                    wx.hideLoading()
+                    wx.showToast({
+                      title: '学习报告已保存到相册',
+                      icon: 'success'
+                    })
+                  },
+                  fail: (err) => {
+                    wx.hideLoading()
+                    this.handleSaveImageError(err)
+                  }
+                })
+              }
+            },
+            fail: (err) => {
+              wx.hideLoading()
+              console.error('下载报告图片失败', err)
+              wx.showToast({
+                title: '下载失败',
+                icon: 'error'
+              })
+            }
+          })
+        } else {
+          wx.hideLoading()
+          wx.showToast({
+            title: '生成报告失败',
+            icon: 'error'
+          })
+        }
+      },
+      fail: (err) => {
+        wx.hideLoading()
+        console.error('调用云函数失败', err)
+        wx.showToast({
+          title: '生成失败',
+          icon: 'error'
+        })
+      }
+    })
+  },
+
+  /**
+   * 处理保存图片时的错误
+   * @param {Object} err - 错误对象
+   */
+  handleSaveImageError(err) {
+    if (err.errMsg.includes('auth deny')) {
+      wx.showModal({
+        title: '需要授权',
+        content: '需要授权访问相册才能保存学习报告',
+        confirmText: '去设置',
+        success: (modalRes) => {
+          if (modalRes.confirm) {
+            wx.openSetting()
+          }
+        }
+      })
+    } else {
+      wx.showToast({
+        title: '保存失败',
+        icon: 'error'
+      })
     }
   },
 
@@ -765,6 +876,32 @@ Page({
 
     // 上传头像到云存储
     this.uploadAvatarToCloud(tempAvatarUrl, tempNickname)
+  },
+
+  /**
+   * 继续新的学习 - 跳转到拍照页面
+   * 响应"开始学习"按钮点击事件
+   */ 
+  continueNewLearning() {
+    // 记录用户行为
+    app.trackUserBehavior('start_learning', {
+      from: 'profile'
+    })
+    
+    // 跳转到拍照页面
+    wx.navigateTo({
+      url: '/pages/camera/camera',
+      success: () => {
+        console.log('跳转到拍照页面成功')
+      },
+      fail: (err) => {
+        console.error('跳转到拍照页面失败', err)
+        wx.showToast({
+          title: '跳转失败',
+          icon: 'error'
+        })
+      }
+    })
   },
 
   /**

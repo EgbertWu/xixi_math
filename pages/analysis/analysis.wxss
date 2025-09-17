@@ -1,5 +1,5 @@
 /* pages/analysis/analysis.wxss */
-/* 希希数学小助手 详细分析页面样式 */
+/* 希希学习小助手 详细分析页面样式 */
 
 .analysis-container {
   min-height: 100vh;

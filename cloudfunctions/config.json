@@ -5,7 +5,9 @@
       "templateMessage.send",
       "wxacode.get",
       "wxacode.getUnlimited",
-      "ocr.printedText"
+      "cloudbase.uploadFile",
+      "cloudbase.downloadFile",
+      "cloudbase.deleteFile"
     ]
   },
   "environment": "cloud1-8g4cl3p21c582f6e"

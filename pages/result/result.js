@@ -1,5 +1,5 @@
 // pages/result/result.js
-// 希希数学小助手 学习结果页面逻辑
+// 希希学习小助手 学习结果页面逻辑
 
 const app = getApp()
 const LearningManager = require('../../utils/learningManager')
@@ -250,7 +250,7 @@ Page({
       },
       
       shareConfig: {
-        title: `我在希希数学小助手完成了${summary.completedSessions}道数学题，等级${calculateChineseLevel(score)}！`, // 修改：分享标题使用等级
+        title: `我在希希学习小助手完成了${summary.completedSessions}道数学题，等级${calculateChineseLevel(score)}！`, // 修改：分享标题使用等级
         desc: `通过AI启发式教学，提升了数学思维能力`,
         imageUrl: '/images/share-result.png'
       },

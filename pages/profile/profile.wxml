@@ -1,5 +1,5 @@
 <!--pages/profile/profile.wxml-->
-<!-- 希希数学小助手 个人资料页面模板 -->
+<!-- 希希学习小助手 个人资料页面模板 -->
 
 <view class="profile-container">
   <!-- 加载状态 -->
@@ -21,7 +21,7 @@
         
         <view class="user-details">
           <text class="user-name">{{userInfo.nickName}}</text>
-          <text class="user-id">ID: {{userInfo.openid || '希希数学小助手用户'}}</text>
+          <text class="user-id">ID: {{userInfo.openid || '希希学习小助手用户'}}</text>
           <!-- 暂时隐藏学习等级，等有更好的计算方法后再启用 -->
           <view class="user-level" wx:if="{{false}}">
             <text class="level-text">学习等级 Lv.{{Math.floor(learningStats.totalQuestions / 5) + 1}}</text>
@@ -174,8 +174,8 @@
 
     <!-- 版本信息 -->
     <view class="version-info">
-      <text class="version-text">希希数学小助手 v1.0.0</text>
-      <text class="copyright-text">© 2024 希希数学小助手 Team</text>
+      <text class="version-text">希希学习小助手 v1.1.0</text>
+      <text class="copyright-text">© 2025 希希学习小助手 Team</text>
     </view>
   </view>
 </view>

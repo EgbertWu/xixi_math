@@ -1,7 +1,7 @@
 {
-  "name": "@希希数学小助手/get-user-history",
+  "name": "@希希学习小助手/get-user-history",
   "version": "1.0.0",
-  "description": "希希数学小助手 获取用户学习历史记录云函数",
+  "description": "希希学习小助手 获取用户学习历史记录云函数",
   "main": "index.js",
   "dependencies": {
     "wx-server-sdk": "~2.6.3"
@@ -10,11 +10,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "希希数学小助手",
+    "希希学习小助手",
     "history",
     "education",
     "data"
   ],
-  "author": "希希数学小助手 Team",
+  "author": "希希学习小助手 Team",
   "license": "MIT"
 }

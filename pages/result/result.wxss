@@ -1,5 +1,5 @@
 /* pages/result/result.wxss */
-/* 希希数学小助手 学习结果页面样式 */
+/* 希希学习小助手 学习结果页面样式 */
 
 .result-container {
   min-height: 100vh;

@@ -1,5 +1,5 @@
 <!--pages/result/result.wxml-->
-<!-- 希希数学小助手 学习结果页面模板 -->
+<!-- 希希学习小助手 学习结果页面模板 -->
 <!-- 修改原因：删除历史记录模式相关代码，统一显示综合学习报告，简化页面结构 -->
 
 <view class="result-container">
@@ -203,7 +203,7 @@
 
     <!-- 底部信息 -->
     <view class="footer-info">
-      <text class="footer-text">本报告由希希数学小助手智能生成</text>
+      <text class="footer-text">本报告由希希学习小助手智能生成</text>
       <text class="footer-time">生成时间：{{reportData.generateTime || '刚刚'}}</text>
     </view>
   </view>

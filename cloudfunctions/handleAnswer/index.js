@@ -179,7 +179,7 @@ exports.main = async (event, context) => {
             answerQuality: aiResult.data.analysis?.answerQuality?.quality || 'unknown'
           },
           page: 'learning',
-          timestamp: timestamp
+          timestamp: new Date().toISOString()
         }
       }
     })

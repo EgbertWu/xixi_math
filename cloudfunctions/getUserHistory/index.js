@@ -50,7 +50,7 @@ exports.main = async (event, context) => {
     // 根据类型获取不同的历史数据
     switch (type) {
       case 'sessions':
-        result = await getLearningSessionHistory(openid, skip, validPageSize, startDate, endDate)
+        result = await getLearningHistory(openid, skip, validPageSize, startDate, endDate)
         break
         
       case 'reports':
@@ -94,7 +94,7 @@ exports.main = async (event, context) => {
  * @param {string} endDate - 结束日期
  * @returns {Object} 会话历史数据
  */
-async function getLearningSessionHistory(openid, skip, limit, startDate, endDate) {
+async function getLearningHistory(openid, skip, limit, startDate, endDate) {
   // 构建查询条件
   const whereCondition = { openid: openid }
   
@@ -109,17 +109,48 @@ async function getLearningSessionHistory(openid, skip, limit, startDate, endDate
     }
   }
   
-  // 获取总数
+  // 从learning_history获取总数和sessionId列表
   const countResult = await db.collection('learning_sessions')
     .where(whereCondition)
     .count()
-  
-  // 获取分页数据
-  const listResult = await db.collection('learning_sessions')
+    
+  const historyResult = await db.collection('learning_history')
     .where(whereCondition)
     .orderBy('startTime', 'desc')
     .skip(skip)
     .limit(limit)
+    .field({
+      sessions: true  // 获取整个sessions数组
+    })
+    .get()
+  
+  // 获取所有sessionId - 修复提取逻辑
+  const sessionIds = []
+  historyResult.data.forEach(item => {
+    if (item.sessions && Array.isArray(item.sessions)) {
+      item.sessions.forEach(session => {
+        if (session.sessionId) {
+          sessionIds.push(session.sessionId)
+        }
+      })
+    }
+  })
+  
+  // 如果没有找到任何sessionId，返回空结果
+  if (sessionIds.length === 0) {
+    return {
+      sessions: [],
+      total: countResult.total,
+      hasMore: skip + limit < countResult.total
+    }
+   
+  }
+  
+  // 根据sessionIds从learning_sessions获取详细数据
+  const sessionsResult = await db.collection('learning_sessions')
+    .where({
+      sessionId: db.command.in(sessionIds)
+    })
     .field({
       sessionId: true,
       questionText: true,
@@ -131,23 +162,34 @@ async function getLearningSessionHistory(openid, skip, limit, startDate, endDate
       aiAnalysis: true
     })
     .get()
+    
+  // 创建sessionId到session数据的映射
+  const sessionMap = {}
+  sessionsResult.data.forEach(session => {
+    sessionMap[session.sessionId] = session
+  })
   
-  // 处理数据
-  const sessions = listResult.data.map(session => ({
-    id: session._id,
-    sessionId: session.sessionId,
-    questionText: session.questionText,
-    status: session.status,
-    startTime: session.startTime,
-    endTime: session.endTime,
-    progress: {
-      current: session.currentRound || 1,
-      total: session.totalRounds || 3
-    },
-    difficulty: session.aiAnalysis?.difficulty || 3,
-    gradeLevel: session.aiAnalysis?.gradeLevel || '未知',
-    type: 'session'
-  }))
+  // 按照中sessionIds的顺序处理数据
+  const sessions = sessionIds.map(sessionId => {
+    const session = sessionMap[sessionId]
+    if (!session) return null
+    
+    return {
+      id: session._id,
+      sessionId: session.sessionId,
+      questionText: session.questionText,
+      status: session.status,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      progress: {
+        current: session.currentRound || 1,
+        total: session.totalRounds || 3
+      },
+      difficulty: session.aiAnalysis?.difficulty || 3,
+      gradeLevel: session.aiAnalysis?.gradeLevel || '未知',
+      type: 'session'
+    }
+  }).filter(Boolean) // 过滤掉null值
   
   return {
     sessions: sessions,

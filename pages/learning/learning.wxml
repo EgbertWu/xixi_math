@@ -1,5 +1,5 @@
 <!--pages/learning/learning.wxml-->
-<!-- 希希数学小助手 学习对话页面模板 -->
+<!-- 希希学习小助手 学习对话页面模板 -->
 
 <view class="learning-container">
   <!-- 顶部导航栏 -->
@@ -10,7 +10,7 @@
         <image class="icon-image icon-white" src="/images/back-icon.png" lazy-load="{{true}}" mode="aspectFit"></image>
       </view>
       <view class="nav-title">
-        <text class="title-text">希希数学辅导</text>
+        <text class="title-text">希希学习辅导</text>
       </view>
     </view>
     
@@ -158,7 +158,7 @@
   </scroll-view>
 
   <!-- 输入区域 -->
-  <view class="input-section" wx:if="{{!isSessionComplete}}">
+  <view class="input-section" wx:if="{{!isSessionComplete && !isReadOnly}}">
     <view class="input-container">
       <view class="input-wrapper">
         <textarea 
@@ -170,6 +170,7 @@
           auto-height
           show-confirm-bar="{{false}}"
           cursor-spacing="20"
+          disabled="{{isReadOnly}}"
         ></textarea>
         <view class="input-counter">
           <text class="counter-text">{{userInput.length}}/500</text>
@@ -186,6 +187,14 @@
         <image class="tip-icon" src="/images/flash-on.png" lazy-load="{{true}}" mode="aspectFit"></image>
         <text class="tip-text">详细描述你的思考过程会获得更好的指导</text>
       </view>
+    </view>
+  </view>
+
+  <!-- 只读模式提示 -->
+  <view class="readonly-notice" wx:if="{{isReadOnly}}">
+    <view class="notice-content">
+      <image class="notice-icon" src="/images/check-icon.png" mode="aspectFit"></image>
+      <text class="notice-text">该学习记录已完成，正在查看历史对话</text>
     </view>
   </view>
 </view>

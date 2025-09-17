@@ -1,5 +1,5 @@
 <!-- pages/analysis/analysis.wxml -->
-<!-- 希希数学小助手 详细分析页面 -->
+<!-- 希希学习小助手 详细分析页面 -->
 
 <view class="analysis-container">
   <!-- 顶部导航 -->
@@ -140,6 +140,6 @@
   
   <!-- 底部信息 -->
   <view class="footer-info">
-    <text class="footer-text">希希数学小助手 - 个性化学习分析</text>
+    <text class="footer-text">希希学习小助手 - 个性化学习分析</text>
   </view>
 </view>

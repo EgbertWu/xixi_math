@@ -1,5 +1,5 @@
 <!--pages/index/index.wxml-->
-<!-- 希希数学小伙伴 首页模板 -->
+<!-- 希希学习小伙伴 首页模板 -->
 
 <view class="container">
   <!-- 头部区域 -->
@@ -7,7 +7,7 @@
     <view class="logo-section">
       <image class="logo" src="/images/mascot.png" mode="aspectFit"></image>
       <view class="title-section">
-        <text class="app-title">希希数学小伙伴</text>
+        <text class="app-title">希希学习小伙伴</text>
       </view>
     </view>
   </view>
@@ -56,9 +56,14 @@
 
   <!-- 解题记录区域 -->
   <view class="history-section">
-    <view class="section-title">
-      <text class="iconfont icon-history icon-xlarge icon-primary"></text>
-      <text class="title">解题记录</text>
+    <view class="history-section-title">
+      <view class="title-left">
+        <text class="iconfont icon-history icon-xlarge icon-primary"></text>
+        <text class="title">解题记录</text>
+      </view>
+      <view class="title-right" bindtap="goToHistoryPage">
+        <text class="iconfont icon-arrow-right"></text>
+      </view>
     </view>
     
     <scroll-view class="history-scroll" scroll-x="true">

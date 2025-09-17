@@ -1,5 +1,5 @@
 // pages/analysis/analysis.js
-// 希希数学小助手 详细分析页面逻辑
+// 希希学习小助手 详细分析页面逻辑
 
 const app = getApp()
 
@@ -414,7 +414,7 @@ Page({
    */
   onShareAppMessage() {
     return {
-      title: `${this.data.title} - 希希数学小助手`,
+      title: `${this.data.title} - 希希学习小助手`,
       path: `/pages/index/index`
     }
   }

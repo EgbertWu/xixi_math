@@ -1,5 +1,5 @@
 /**app.wxss**/
-/* 希希数学小助手 全局样式 */
+/* 希希学习小助手 全局样式 */
 
 /* 引入统一图标字体 */
 @import "styles/iconfont.wxss";

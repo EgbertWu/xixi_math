@@ -19,6 +19,7 @@ const db = cloud.database()
  * @param {string} event.openid - 用户ID（用于学习历史相关操作）
  * @param {Object} event.historyData - 历史数据（用于保存学习历史）
  */
+
 exports.main = async (event, context) => {
   
   try {
@@ -30,27 +31,31 @@ exports.main = async (event, context) => {
     }
     
     // 根据操作类型分发处理
+    // 在switch语句中添加新的case（第34-52行）
     switch (action) {
-      case 'recordBehavior':
-        return await recordBehavior(data)
-      case 'syncUserData':
-        return await syncUserData(data)
-      case 'updateSessionProgress':
-        return await updateSessionProgress(data)
-      case 'saveLearningHistory':
-        // 新增：处理保存学习历史的请求
-        return await addLearningHistory({
-          openid: openid,
-          sessionInfo: historyData
-        })
-      case 'getLearningHistory':
-        // 新增：获取学习历史
-        return await getLearningHistory(data)
-      case 'getRecentLearningHistory':
-        // 新增：获取最近学习历史
-        return await getRecentLearningHistory(data)
-      default:
-        return createErrorResponse('无效的操作类型', 'INVALID_ACTION')
+    case 'recordBehavior':
+    return await recordBehavior(data)
+    case 'syncUserData':
+    return await syncUserData(data)
+    case 'updateSessionProgress':
+    return await updateSessionProgress(data)
+    case 'saveLearningHistory':
+    // 新增：处理保存学习历史的请求
+    return await addLearningHistory({
+    openid: openid,
+    sessionInfo: historyData
+    })
+    case 'getLearningHistory':
+    // 新增：获取学习历史
+    return await getLearningHistory(data)
+    case 'getRecentLearningHistory':
+    // 新增：获取最近学习历史
+    return await getRecentLearningHistory(data)
+    case 'getSessionData':
+    // 新增：获取会话数据（传递openid参数）
+    return await getSessionData(data, openid)
+    default:
+    return createErrorResponse('无效的操作类型', 'INVALID_ACTION')
     }
     
   } catch (error) {
@@ -79,7 +84,7 @@ async function recordBehavior(behaviorData) {
     
     // 参数验证
     if (!openid || !action) {
-      return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
+      return createErrorResponse('recordBehavior缺少必要参数', 'MISSING_PARAMS')
     }
     
     // 构建行为记录
@@ -303,7 +308,8 @@ async function updateSessionProgress(progressData) {
   
   try {
     const { 
-      sessionId, 
+      sessionId,
+      openid:passedOpenid,
       dialogue, 
       currentRound, 
       status,
@@ -315,11 +321,12 @@ async function updateSessionProgress(progressData) {
     
     // 获取微信用户信息
     const wxContext = cloud.getWXContext()
-    const openid = wxContext.OPENID
+    // 使用传入的openid或从上下文获取openid
+    const openid = passedOpenid || wxContext.OPENID
     
     // 参数验证
     if (!sessionId || !openid) {
-      return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
+      return createErrorResponse('updateSessionProgress缺少必要参数', 'MISSING_PARAMS')
     }
     
     // 构建更新数据
@@ -331,18 +338,12 @@ async function updateSessionProgress(progressData) {
     
     // 添加可选字段
     // 在 updateSessionProgress 函数中添加状态验证
-    function validateStatus(status) {
-      const validStatuses = ['active', 'completed', 'abandoned']
-      return validStatuses.includes(status)
-    }
-    
-    // 在更新前验证
-    if (status && !validateStatus(status)) {
-      updateData.status = 'active'
-    } else if (status) {
+    if (status) {
       updateData.status = status
     }
+
     if (lastAnswerCheck) updateData.lastAnswerCheck = lastAnswerCheck
+    
     if (endTime) {
       updateData.endTime = endTime
     }
@@ -615,7 +616,7 @@ async function addLearningHistory(historyData) {
     
     // 参数验证
     if (!openid || !sessionInfo || !sessionInfo.sessionId) {
-      return createErrorResponse('缺少必要参数', 'MISSING_PARAMS')
+      return createErrorResponse('addLearningHistory缺少必要参数', 'MISSING_PARAMS')
     }
     
     try {
@@ -660,7 +661,6 @@ async function addLearningHistory(historyData) {
       })
       
     } catch (error) {
-      // 修复：处理文档不存在的多种错误码
       if (error.errCode === -502002 || error.errCode === -1 || error.errMsg.includes('does not exist')) {
         
         await db.collection('learning_history').doc(openid).set({
@@ -703,35 +703,18 @@ async function addLearningHistory(historyData) {
  * @returns {Object} 历史记录
  */
 async function getLearningHistory(queryData) {
+  const { openid, limit, skip = 0, status } = queryData
   
   try {
-    const { openid, limit, skip = 0, status } = queryData
-    
-    // 参数验证
-    if (!openid) {
-      return createErrorResponse('缺少用户ID', 'MISSING_USER_ID')
-    }
-    
     // 查询用户历史记录
     const historyResult = await db.collection('learning_history').doc(openid).get()
     
-    if (historyResult.data.length === 0) {
-      return {
-        success: true,
-        data: {
-          sessions: [],
-          totalSessions: 0,
-          completedSessions: 0,
-          hasMore: false
-        }
-      }
-    }
-    
-    const historyData = historyResult.data[0]
+    // 修复变量名错误
+    const historyData = historyResult.data || {}
     let sessions = historyData.sessions || []
     
     // 状态筛选
-    if (status) {
+    if (status && status !== 'all') {
       sessions = sessions.filter(s => s.status === status)
     }
     
@@ -745,14 +728,21 @@ async function getLearningHistory(queryData) {
         sessions: paginatedSessions,
         totalSessions: historyData.totalSessions || 0,
         completedSessions: historyData.completedSessions || 0,
-        hasMore: skip + limit < totalCount,
-        totalCount: totalCount
+        hasMore: skip + limit < totalCount
       }
     }
-    
   } catch (error) {
-    console.error('获取学习历史记录失败:', error)
-    throw error
+    console.error('获取学习历史失败:', error)
+    return {
+      success: false,
+      error: error.message,
+      data: {
+        sessions: [],
+        totalSessions: 0,
+        completedSessions: 0,
+        hasMore: false
+      }
+    }
   }
 }
 
@@ -792,5 +782,74 @@ async function getRecentLearningHistory(queryData) {
   } catch (error) {
     console.error('获取最近学习记录失败:', error)
     throw error
+  }
+}
+
+/**
+ * 获取会话数据
+ * @param {Object} queryData - 查询参数
+ * @param {string} queryData.sessionId - 会话ID
+ * @param {string} openid - 用户openid
+ * @returns {Object} 会话数据
+ */
+async function getSessionData(queryData, openid) {
+  try {
+    const { sessionId } = queryData
+    
+    if (!sessionId) {
+      return createErrorResponse('缺少会话ID', 'MISSING_SESSION_ID')
+    }
+    
+    if (!openid) {
+      return createErrorResponse('用户未登录', 'USER_NOT_LOGGED_IN')
+    }
+    
+    console.log('查询会话数据，sessionId:', sessionId, 'openid:', openid)
+    
+    // 从learning_sessions集合中查询会话数据，同时验证openid
+    const sessionResult = await db.collection('learning_sessions')
+      .where({
+        sessionId: sessionId,
+        openid: openid  // 添加openid验证，确保用户只能访问自己的数据
+      })
+      .get()
+    
+    console.log('查询结果:', sessionResult)
+    
+    if (sessionResult.data.length === 0) {
+      return createErrorResponse('会话不存在或无权限访问', 'SESSION_NOT_FOUND_OR_NO_PERMISSION')
+    }
+    
+    const sessionData = sessionResult.data[0]
+    
+    // 确保返回的数据结构完整，防止undefined错误
+    // 改动原因：添加字段兼容性，同时支持messages和dialogue字段
+    const dialogueData = sessionData.dialogue || sessionData.messages || []
+    
+    const result = {
+      success: true,
+      data: {
+        sessionId: sessionData.sessionId,
+        dialogue: dialogueData,  // 添加兼容字段
+        subject: sessionData.subject || '',
+        difficulty: sessionData.difficulty || '',
+        questionType: sessionData.questionType || '',
+        questionText: sessionData.questionText || '',
+        questionImage: sessionData.questionImage || '',
+        aiAnalysis: sessionData.aiAnalysis || null,
+        currentRound: sessionData.currentRound || 1,
+        isComplete: sessionData.isComplete || false,
+        createdAt: sessionData.createdAt,
+        updatedAt: sessionData.updatedAt,
+        status: sessionData.status || 'active'
+      }
+    }
+    
+    console.log('返回会话数据:', result)
+    return result
+    
+  } catch (error) {
+    console.error('获取会话数据失败:', error)
+    return createErrorResponse('获取会话数据失败: ' + error.message, 'GET_SESSION_ERROR')
   }
 }

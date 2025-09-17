@@ -1,5 +1,5 @@
 <!--pages/camera/camera.wxml-->
-<!-- 希希数学小助手 拍照识别页面模板 -->
+<!-- 希希学习小助手 拍照识别页面模板 -->
 
 <view class="camera-container">
   <!-- 权限提示 -->
@@ -26,7 +26,7 @@
           <image class="icon-image" src="/images/back-icon.png"></image>
         </view>
         
-        <view class="title-text">希希数学小助手</view>
+        <view class="title-text">希希学习小助手</view>
         
         <view class="camera-tools">
           <view class="tool-btn" bindtap="toggleFlash">
@@ -120,6 +120,9 @@
       <view class="processing-tips">
         <text class="tip-text">AI正在为您准备个性化的学习体验...</text>
       </view>
+      <canvas 
+      canvas-id="compressCanvas" 
+      style="position: fixed; top: -1000px; left: -1000px; width: 1px; height: 1px;"></canvas>
     </view>
   </view>
 </view>

@@ -3,6 +3,7 @@
 
 const cloud = require('wx-server-sdk')
 const OpenAI = require('openai')
+const axios = require('axios')
 
 // 初始化云开发
 cloud.init({
@@ -14,27 +15,57 @@ const db = cloud.database()
 /**
  * 云函数入口函数
  * @param {Object} event - 事件参数
- * @param {string} event.imageBase64 - 图片Base64数据
+ * @param {string} event.imageFileID - 云存储图片ID
  * @param {string} event.openid - 用户ID
  * @param {string} event.sessionId - 会话ID
  */
 exports.main = async (event, context) => {
-  const { imageBase64, openid, sessionId } = event;
+  const { imageFileID, openid, sessionId } = event;
   
   try {
     // 验证必要参数
-    if (!imageBase64) {
+    if (!imageFileID) {
       return {
         success: false,
-        error: '缺少图片数据'
+        error: '缺少图片文件ID'
       };
     }
     
-    // 直接使用Base64数据调用qwen-vl-max模型
+      
+    console.log('开始处理云存储图片:', imageFileID);
+    
+    // 从云存储下载图片
+    const downloadResult = await cloud.downloadFile({
+      fileID: imageFileID
+    });
+
+    // 添加下载结果验证
+    if (!downloadResult || !downloadResult.fileContent) {
+      console.error('云存储下载失败:', downloadResult);
+      return {
+        success: false,
+        error: '图片下载失败，请重新上传图片'
+      };
+    }
+    
+    const maxSize = 900 * 1024; // 900KB，留出余量
+    if (downloadResult.fileContent.length > maxSize) {
+      return {
+        success: false,
+        error: `图片文件过大（${Math.round(downloadResult.fileContent.length / 1024)}KB），请压缩后重试`
+      };
+    }
+    
+    console.log(`图片大小: ${Math.round(downloadResult.fileContent.length / 1024)}KB`);
+    
+    // 将图片转换为Base64
+    const imageBase64 = downloadResult.fileContent.toString('base64');
+    
+    // 使用Base64数据调用qwen-vl-max模型
     const analysisResult = await analyzeWithQwenVLMax(imageBase64);
     
     if (!analysisResult.success) {
-      throw new Error(analysisResult.error || '图像分析失败');
+      throw new Error(analysisResult.error || '图像识别分析失败');
     }
 
     // 🚀 优化：并行执行数据库操作，不阻塞主流程
@@ -42,7 +73,7 @@ exports.main = async (event, context) => {
       sessionId: sessionId,
       openid: openid,
       questionText: analysisResult.data.questionText,
-      questionImage: 'base64_image',
+      questionImage: 'imageBase64',
       aiAnalysis: analysisResult.data,
       dialogue: [],
       createdAt: new Date(),
@@ -94,6 +125,7 @@ async function saveSessionToDatabase(sessionData) {
     await db.collection('learning_sessions').add({
       data: sessionData
     });
+    console.log('初始会话数据保存成功:', sessionData);
   } catch (error) {
     console.error('保存会话数据失败:', error);
     throw error;

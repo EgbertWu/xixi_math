@@ -1,5 +1,5 @@
 /* pages/learning/learning.wxss */
-/* 希希数学小助手 学习对话页面样式 */
+/* 希希学习小助手 学习对话页面样式 */
 
 .learning-container {
   min-height: 100vh;

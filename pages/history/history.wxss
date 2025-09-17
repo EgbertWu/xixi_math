@@ -1,6 +1,7 @@
 /* pages/history/history.wxss */
 .history-container {
-  height: 100vh;
+  /* 修改原因：移除固定高度，让容器根据内容自动调整大小 */
+  min-height: 100vh;
   background-color: #f5f5f5;
   display: flex;
   flex-direction: column;
@@ -9,19 +10,22 @@
 /* 顶部导航 */
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20rpx 30rpx 30rpx;
+  /* 修改原因：减少顶部内边距，避免过多空白 */
+  padding: 15rpx 30rpx 25rpx;
   color: white;
 }
 
 .header-content {
-  padding-top: 20rpx;
+  /* 修改原因：减少顶部内边距 */
+  padding-top: 15rpx;
 }
 
 .title {
   font-size: 36rpx;
   font-weight: bold;
   display: block;
-  margin-bottom: 15rpx;
+  /* 修改原因：减少标题底部间距 */
+  margin-bottom: 10rpx;
 }
 
 .stats {
@@ -37,7 +41,8 @@
 /* 筛选栏 */
 .filter-bar {
   background: white;
-  padding: 20rpx 30rpx;
+  /* 修改原因：减少筛选栏内边距 */
+  padding: 15rpx 30rpx;
   border-bottom: 1rpx solid #eee;
 }
 
@@ -61,18 +66,30 @@
 }
 
 /* 历史记录列表 */
+/* 修改原因：减少左右边距，使列表往左移动 */
 .history-list {
   flex: 1;
-  padding: 20rpx 30rpx;
+  /* 修改原因：减少列表容器内边距，避免过多空白 */
+  padding: 15rpx 15rpx;
 }
 
 .history-item {
   background: white;
   border-radius: 16rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
+  /* 修改原因：设置固定高度，确保每个历史记录大小一致 */
+  height: 160rpx;
+  padding: 25rpx;
+  /* 修改原因：减少项目间距 */
+  margin-bottom: 15rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  /* 修改原因：使用flex布局确保内容垂直居中 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .history-item:active {
@@ -83,23 +100,38 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20rpx;
+  /* 修改原因：设置固定高度，确保布局一致 */
+  height: 110rpx;
+  /* 修改原因：移除进度条后不需要底部边距 */
 }
 
 .session-info {
   flex: 1;
   margin-right: 20rpx;
+  /* 修改原因：确保信息区域不超出容器 */
+  overflow: hidden;
 }
 
+/* 修改原因：设置固定高度并添加省略号处理 */
 .question-preview {
   font-size: 32rpx;
   font-weight: 500;
   color: #333;
   display: block;
-  margin-bottom: 10rpx;
+  /* 修改原因：减少题目底部间距 */
+  margin-bottom: 8rpx;
+  /* 修改原因：设置固定高度，最多显示2行 */
+  height: 90rpx;
+  line-height: 45rpx;
+  /* 修改原因：添加省略号处理，超出部分用省略号代替 */
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-wrap: break-word;
+  word-break: break-all;
+  max-width: 100%;
 }
 
 .session-meta {
@@ -107,6 +139,11 @@
   gap: 20rpx;
   font-size: 24rpx;
   color: #999;
+  flex-wrap: wrap;
+  align-items: center;
+  /* 修改原因：限制元信息高度 */
+  height: 30rpx;
+  overflow: hidden;
 }
 
 .session-status {
@@ -114,6 +151,8 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8rpx;
+  /* 修改原因：确保状态区域不超出容器 */
+  min-width: 80rpx;
 }
 
 .status-badge {
@@ -121,6 +160,8 @@
   border-radius: 12rpx;
   font-size: 22rpx;
   font-weight: 500;
+  /* 修改原因：确保状态标签不换行 */
+  white-space: nowrap;
 }
 
 .status-badge.completed {
@@ -139,35 +180,12 @@
   font-weight: 500;
 }
 
-.session-progress {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  margin-bottom: 20rpx;
-}
-
-.progress-text {
-  font-size: 26rpx;
-  color: #666;
-  min-width: 120rpx;
-}
-
-.progress-bar {
-  flex: 1;
-  height: 8rpx;
-  background: #f0f0f0;
-  border-radius: 4rpx;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  transition: width 0.3s;
-}
+/* 移除进度条相关样式 */
+/* .session-progress, .progress-text, .progress-bar, .progress-fill 样式已删除 */
 
 .question-image {
-  margin-top: 20rpx;
+  /* 修改原因：由于设置了固定高度，隐藏图片显示以保持布局一致 */
+  display: none;
 }
 
 .thumbnail {
@@ -182,27 +200,30 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 100rpx 50rpx;
+  /* 修改原因：大幅减少空状态容器的内边距，避免过多空白 */
+  padding: 60rpx 50rpx;
   text-align: center;
 }
 
 .empty-icon {
-  width: 200rpx;
-  height: 200rpx;
-  margin-bottom: 30rpx;
+  /* 修改原因：减少空状态图标大小 */
+  width: 160rpx;
+  height: 160rpx;
+  /* 修改原因：减少图标底部间距 */
+  margin-bottom: 20rpx;
   opacity: 0.6;
 }
 
 .empty-text {
   font-size: 32rpx;
   color: #666;
-  margin-bottom: 15rpx;
+  /* 修改原因：减少文本底部间距 */
+  margin-bottom: 10rpx;
 }
 
 .empty-hint {
   font-size: 26rpx;
   color: #999;
-  margin-bottom: 40rpx;
 }
 
 .start-learning-btn {
@@ -212,13 +233,16 @@
   border-radius: 25rpx;
   padding: 20rpx 40rpx;
   font-size: 28rpx;
+  /* 修改原因：添加按钮顶部间距 */
+  margin-top: 20rpx;
 }
 
 /* 加载状态 */
 .loading-container {
   display: flex;
   justify-content: center;
-  padding: 100rpx 0;
+  /* 修改原因：大幅减少加载状态的内边距 */
+  padding: 60rpx 0;
 }
 
 .loading-text {
@@ -229,7 +253,8 @@
 .load-more {
   display: flex;
   justify-content: center;
-  padding: 30rpx 0;
+  /* 修改原因：减少加载更多按钮的内边距 */
+  padding: 20rpx 0;
 }
 
 .load-more-btn {
@@ -244,7 +269,8 @@
 .no-more {
   display: flex;
   justify-content: center;
-  padding: 30rpx 0;
+  /* 修改原因：减少"没有更多"提示的内边距 */
+  padding: 20rpx 0;
 }
 
 .no-more-text {
